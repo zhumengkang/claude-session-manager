@@ -1,0 +1,19 @@
+name: source-only
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-source-tree:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Reject release attachments and local data
+        run: ./scripts/check-source-only.sh --tracked

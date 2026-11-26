@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="590" viewBox="0 0 1200 590" role="img" aria-labelledby="title desc">
+  <title id="title">macOS 安装和授权流程</title>
+  <desc id="desc">准备 Terminal 与 CLI，安装完整 App，核对签名，授予自动化和辅助功能，再进行最小验证；Codex 数据库由内嵌 SQLite 读取，重编译后检查 CDHash。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#64748b"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-15%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="590" fill="#f8fafc"/>
+  <text x="50" y="54" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif" font-size="29" font-weight="700" fill="#0f172a">macOS 安装与首次配置</text>
+  <text x="50" y="84" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif" font-size="15" fill="#64748b">适用于完整 .app / DMG；不是只复制单个 Unix 可执行文件</text>
+
+  <g filter="url(#shadow)" fill="#ffffff" stroke="#cbd5e1">
+    <rect x="50" y="125" width="320" height="130" rx="16"/>
+    <rect x="440" y="125" width="320" height="130" rx="16"/>
+    <rect x="830" y="125" width="320" height="130" rx="16"/>
+    <rect x="50" y="320" width="320" height="130" rx="16"/>
+    <rect x="440" y="320" width="320" height="130" rx="16"/>
+    <rect x="830" y="320" width="320" height="130" rx="16"/>
+  </g>
+  <g font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif">
+    <circle cx="82" cy="156" r="18" fill="#e0e7ff"/><text x="82" y="162" text-anchor="middle" font-size="16" font-weight="700" fill="#4f46e5">1</text>
+    <text x="112" y="162" font-size="19" font-weight="700" fill="#0f172a">准备运行环境</text>
+    <text x="75" y="197" font-size="15" fill="#475569">Terminal · claude / codex</text>
+    <text x="75" y="224" font-size="14" fill="#64748b">在 Terminal 登录 shell 检查 PATH</text>
+
+    <circle cx="472" cy="156" r="18" fill="#e0e7ff"/><text x="472" y="162" text-anchor="middle" font-size="16" font-weight="700" fill="#4f46e5">2</text>
+    <text x="502" y="162" font-size="19" font-weight="700" fill="#0f172a">安装完整应用包</text>
+    <text x="465" y="197" font-size="15" fill="#475569">.app / DMG → /Applications</text>
+    <text x="465" y="224" font-size="14" fill="#64748b">保留整个 Claude Session Manager.app</text>
+
+    <circle cx="862" cy="156" r="18" fill="#e0e7ff"/><text x="862" y="162" text-anchor="middle" font-size="16" font-weight="700" fill="#4f46e5">3</text>
+    <text x="892" y="162" font-size="19" font-weight="700" fill="#0f172a">核对来源与完整性</text>
+    <text x="855" y="197" font-size="15" fill="#475569">SHA-256 · codesign --verify</text>
+    <text x="855" y="224" font-size="14" fill="#64748b">当前 ad hoc，不等于 Developer ID / 公证</text>
+
+    <circle cx="82" cy="351" r="18" fill="#d1fae5"/><text x="82" y="357" text-anchor="middle" font-size="16" font-weight="700" fill="#047857">4</text>
+    <text x="112" y="357" font-size="19" font-weight="700" fill="#0f172a">授予两项权限</text>
+    <text x="75" y="392" font-size="15" fill="#475569">自动化 → Terminal</text>
+    <text x="75" y="419" font-size="15" fill="#475569">辅助功能 → Claude Session Manager</text>
+
+    <circle cx="472" cy="351" r="18" fill="#d1fae5"/><text x="472" y="357" text-anchor="middle" font-size="16" font-weight="700" fill="#047857">5</text>
+    <text x="502" y="357" font-size="19" font-weight="700" fill="#0f172a">最小化实际验证</text>
+    <text x="465" y="392" font-size="15" fill="#475569">先恢复一个可信的停止会话</text>
+    <text x="465" y="419" font-size="15" fill="#475569">再用少量测试会话验证单窗多标签</text>
+
+    <circle cx="862" cy="351" r="18" fill="#fef3c7"/><text x="862" y="357" text-anchor="middle" font-size="16" font-weight="700" fill="#b45309">6</text>
+    <text x="892" y="357" font-size="19" font-weight="700" fill="#0f172a">重编译后重新核对</text>
+    <text x="855" y="392" font-size="15" fill="#475569">CDHash 变化可能使旧 TCC 授权失配</text>
+    <text x="855" y="419" font-size="14" fill="#64748b">必要时只重置本 App 条目并重新授权</text>
+  </g>
+
+  <path d="M372 190 L432 190" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M762 190 L822 190" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M990 257 L990 285 L210 285 L210 312" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M372 385 L432 385" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <path d="M762 385 L822 385" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="50" y="500" width="1100" height="54" rx="13" fill="#fff1f2" stroke="#fecdd3"/>
+  <text x="600" y="524" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif" font-size="15" font-weight="600" fill="#be123c">不要全局关闭 Gatekeeper，不要直接编辑 TCC 数据库，不要通过关闭所有 Terminal 窗口处理测试。</text>
+  <text x="600" y="546" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif" font-size="13" fill="#9f1239">详细命令和故障排查见项目 README。</text>
+</svg>

@@ -1,0 +1,3099 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude / Codex Session Manager</title>
+<link rel="stylesheet" href="./vendor/tabler/tabler.min.css">
+<style>
+:root {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --raised: #f0f0f2;
+  --card: #ffffff;
+  --border: #d8d8de;
+  --muted: #8e8e9a;
+  --body: #3c3c44;
+  --text: #1a1a22;
+  --accent: #5b4ef0;
+  --accent-lo: rgba(91,78,240,0.10);
+  --accent-hi: #7c6cf8;
+  --green: #059669;
+  --green-lo: rgba(5,150,105,0.10);
+  --warning: #d97706;
+  --danger: #dc2626;
+  --r1: 6px; --r2: 10px; --r3: 16px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, "SF Pro Text", system-ui, sans-serif;
+  font-size: 13px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Layout ── */
+#app {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  grid-template-rows: 46px minmax(0, 1fr);
+  height: 100vh;
+  padding-top: 28px;
+}
+
+/* ── Titlebar drag area ── */
+#titlebar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 28px; z-index: 50;
+  -webkit-app-region: drag;
+  background: transparent;
+}
+
+/* ── Provider switch ── */
+#provider-bar {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 6px 18px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  z-index: 20;
+}
+.provider-tabs {
+  display: flex; align-items: center; gap: 3px;
+  padding: 3px; border: 1px solid var(--border);
+  border-radius: 9px; background: var(--raised);
+}
+.provider-tab {
+  min-width: 94px; padding: 4px 14px;
+  border: 1px solid transparent; border-radius: 6px;
+  background: transparent; color: var(--muted);
+  font: 600 12px/1.5 -apple-system, "SF Pro Text", system-ui, sans-serif;
+  cursor: pointer; transition: background .15s, color .15s, box-shadow .15s;
+}
+.provider-tab:hover { color: var(--text); }
+.provider-tab.active {
+  color: var(--accent); background: var(--surface); border-color: var(--border);
+  box-shadow: 0 1px 4px rgba(26,26,34,.08);
+}
+.provider-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+#storage-note {
+  justify-self: end; min-width: 0; max-width: 100%;
+  color: var(--muted); font-size: 10px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+#storage-note.error { color: var(--danger); }
+@media (max-width: 720px) {
+  #provider-bar { gap: 8px; padding-left: 10px; padding-right: 10px; }
+  .provider-tab { min-width: 74px; padding-left: 9px; padding-right: 9px; }
+  #storage-note { max-width: 190px; }
+}
+
+/* ── Sidebar ── */
+#sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+#sidebar-header {
+  padding: 12px 14px 10px;
+  display: flex; align-items: center; gap: 9px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-icon {
+  width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+  background: linear-gradient(135deg, #5b4ef0, #8b5cf6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; color: #fff; letter-spacing: -1px;
+  box-shadow: 0 2px 8px rgba(91,78,240,0.25);
+}
+#sidebar-header h1 { font-size: 13px; font-weight: 600; flex: 1; color: var(--text); }
+.badge {
+  background: var(--raised); color: var(--muted);
+  border-radius: 99px; padding: 1px 8px; font-size: 11px;
+  border: 1px solid var(--border);
+}
+
+/* search */
+#search-wrap { padding: 10px 10px 6px; position: relative; }
+#search-wrap .ico {
+  position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+  color: var(--muted); font-size: 13px; pointer-events: none;
+}
+#search {
+  width: 100%; background: var(--raised);
+  border: 1px solid var(--border); border-radius: var(--r1);
+  color: var(--text); font-size: 12px;
+  padding: 6px 10px 6px 28px; outline: none;
+  transition: border-color .15s;
+}
+#search:focus { border-color: var(--accent); }
+#search::placeholder { color: var(--muted); }
+
+/* sort + filter row */
+#controls {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+  gap: 3px; padding: 0 10px 8px; align-items: center;
+}
+.ftab {
+  min-width: 0; background: none; border: 1px solid var(--border);
+  border-radius: var(--r1); color: var(--muted); font-size: 10px;
+  padding: 3px 2px; cursor: pointer; transition: all .15s; text-align: center;
+  white-space: nowrap; font-family: inherit;
+}
+.ftab:hover { border-color: var(--accent); color: var(--accent); }
+.ftab.active { background: var(--accent-lo); border-color: var(--accent); color: var(--accent); }
+#sort-btn {
+  background: none; border: 1px solid var(--border); border-radius: var(--r1);
+  color: var(--muted); font-size: 10px; padding: 3px 5px; cursor: pointer;
+  transition: all .15s; white-space: nowrap; font-family: inherit;
+}
+#sort-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* session list */
+#session-list {
+  flex: 1; overflow-y: auto; padding: 2px 6px 8px;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+
+.session-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 8px 8px; border-radius: var(--r1); cursor: pointer;
+  position: relative; user-select: none; transition: background .1s;
+}
+.session-item:hover { background: var(--raised); }
+.session-item.active { background: var(--accent-lo); }
+.session-item.selected::before {
+  content: ''; position: absolute; left: 0; top: 8px; bottom: 8px;
+  width: 3px; border-radius: 2px; background: var(--accent);
+}
+
+.s-check {
+  width: 15px; height: 15px; flex-shrink: 0; margin-top: 2px;
+  border: 1.5px solid var(--border); border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .1s; background: transparent; font-size: 9px;
+}
+.session-item:hover .s-check { border-color: var(--accent); }
+.session-item.selected .s-check,
+.s-check.checked {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+.session-item.selected .s-check::after,
+.s-check.checked::after { content: '✓'; font-weight: 700; }
+
+/* focus ring for keyboard nav */
+.session-item:focus {
+  outline: 2px solid var(--accent); outline-offset: -2px;
+  background: var(--raised);
+}
+.session-item:focus .s-check { border-color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+.s-body { flex: 1; min-width: 0; }
+.s-title {
+  font-size: 12px; font-weight: 500; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.s-meta { display: flex; gap: 5px; align-items: center; margin-top: 2px; flex-wrap: wrap; }
+.s-time { font-size: 10px; color: var(--muted); }
+.s-count {
+  font-size: 10px; color: var(--muted); background: var(--raised);
+  border-radius: 99px; padding: 0 5px; border: 1px solid var(--border);
+}
+.s-kind {
+  font-size: 9px; line-height: 1.5; color: var(--accent);
+  background: var(--accent-lo); border: 1px solid rgba(91,78,240,.18);
+  border-radius: 99px; padding: 0 5px; white-space: nowrap;
+}
+.s-project { font-size: 10px; color: var(--muted); max-width: 110px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.s-star {
+  font-size: 13px; color: var(--muted); flex-shrink: 0;
+  cursor: pointer; transition: color .1s; line-height: 1; padding: 2px;
+}
+.s-star.on { color: var(--warning); }
+.s-star:hover { color: var(--warning); }
+
+/* project tree */
+.proj-header {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 8px; border-radius: var(--r1); cursor: pointer;
+  user-select: none; transition: background .1s;
+}
+.proj-header:hover { background: var(--raised); }
+.proj-header.open { background: var(--accent-lo); }
+.proj-arrow { font-size: 10px; color: var(--muted); width: 12px; flex-shrink: 0; }
+.proj-icon { font-size: 14px; flex-shrink: 0; }
+.proj-info { flex: 1; min-width: 0; }
+.proj-name { font-size: 12px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.proj-meta { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.proj-time { font-size: 10px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+.proj-selall {
+  background: none; border: 1px solid var(--border); border-radius: 4px;
+  color: var(--muted); font-size: 11px; padding: 2px 5px; cursor: pointer;
+  flex-shrink: 0; transition: all .1s;
+}
+.proj-selall:hover { border-color: var(--accent); color: var(--accent); }
+.proj-item { margin-left: 18px; }
+
+/* group header */
+.group-header {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .8px;
+  padding: 8px 8px 4px; user-select: none;
+}
+
+/* sidebar footer */
+#sidebar-footer {
+  border-top: 1px solid var(--border);
+  padding: 10px; display: flex; flex-direction: column; gap: 7px;
+}
+#action-btns { display: flex; gap: 5px; }
+#btn-open-favs { flex: none; width: 100%; font-weight: 600; }
+#btn-terminal:disabled, #btn-open-favs:disabled { opacity: .55; cursor: not-allowed; }
+.btn {
+  flex: 1; padding: 6px 8px; border-radius: var(--r1);
+  border: 1px solid var(--border); background: var(--raised);
+  color: var(--body); font-size: 11px; cursor: pointer;
+  transition: all .15s; text-align: center; white-space: nowrap;
+  font-family: inherit;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.btn.primary:hover { background: var(--accent-hi); }
+.btn.success:hover { border-color: var(--green); color: var(--green); }
+.btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+#status-bar {
+  font-size: 10px; color: var(--muted); text-align: center;
+  min-height: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── Main panel ── */
+#main {
+  display: flex; flex-direction: column; overflow: hidden;
+  min-height: 0; background: var(--bg);
+}
+
+#main-toolbar {
+  padding: 10px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); min-height: 50px; flex-shrink: 0;
+}
+#main-toolbar .back-btn {
+  background: none; border: 1px solid var(--border); border-radius: var(--r1);
+  color: var(--muted); padding: 4px 10px; font-size: 11px; cursor: pointer;
+  display: none; transition: all .15s;
+}
+#main-toolbar .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+#session-title {
+  flex: 1; font-size: 14px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#session-title.empty { color: var(--muted); font-weight: 400; font-style: italic; font-size: 13px; }
+.tag {
+  background: var(--raised); border: 1px solid var(--border);
+  border-radius: var(--r1); padding: 3px 8px; font-size: 11px;
+  color: var(--muted); white-space: nowrap;
+  max-width: 200px; overflow: hidden; text-overflow: ellipsis;
+}
+.tag.green { border-color: var(--green); color: var(--green); background: var(--green-lo); }
+#open-btn {
+  background: var(--accent); border: none; border-radius: var(--r1);
+  color: #fff; padding: 6px 14px; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: opacity .15s;
+  display: none;
+}
+#open-btn:hover { opacity: .85; }
+
+/* chat area */
+#chat-area {
+  flex: 1; overflow-y: auto; padding: 24px 28px;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+#empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; height: 100%; gap: 14px; color: var(--muted);
+}
+.empty-icon {
+  width: 64px; height: 64px; border-radius: 18px;
+  background: linear-gradient(135deg, #5b4ef0, #8b5cf6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 800; color: #fff; letter-spacing: -2px;
+  opacity: .85; box-shadow: 0 4px 20px rgba(91,78,240,0.2);
+}
+#empty-state p { font-size: 14px; }
+#empty-state small { font-size: 12px; color: var(--muted); }
+
+/* messages */
+.msg-group { margin-bottom: 28px; }
+.msg-header { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
+.avatar {
+  width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff;
+}
+.avatar.user { background: linear-gradient(135deg, #5b4ef0, #8b5cf6); }
+.avatar.assistant { background: linear-gradient(135deg, #059669, #34d399); }
+.msg-role { font-size: 12px; font-weight: 600; color: var(--text); }
+.msg-time { font-size: 10px; color: var(--muted); margin-left: auto; }
+.msg-body {
+  margin-left: 37px; font-size: 13.5px; color: var(--body);
+  line-height: 1.75; word-break: break-word;
+  max-width: 820px;
+  white-space: pre-wrap;
+}
+/* inline code */
+.msg-body code {
+  background: #eeeef5; border: 1px solid var(--border);
+  border-radius: 4px; padding: 1px 6px;
+  font-family: "SF Mono", "Fira Code", Menlo, monospace;
+  font-size: 12px; color: #5b4ef0;
+}
+/* code blocks */
+.msg-body pre {
+  background: #1e1e2e; border: 1px solid #3a3a50;
+  border-radius: var(--r1); padding: 14px 16px; margin: 10px 0;
+  overflow-x: auto; font-size: 12px;
+  font-family: "SF Mono", "Fira Code", Menlo, monospace;
+  color: #cdd6f4; line-height: 1.65; position: relative;
+}
+.msg-body pre code {
+  background: none; border: none; padding: 0;
+  color: inherit; font-size: inherit;
+}
+.code-lang {
+  position: absolute; top: 6px; right: 10px;
+  font-size: 10px; color: #6c7086; font-family: "SF Mono", Menlo, monospace;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+/* headings */
+.msg-body h1,.msg-body h2,.msg-body h3,.msg-body h4 {
+  color: var(--text); margin: 16px 0 8px; font-weight: 700; line-height: 1.3;
+}
+.msg-body h1 { font-size: 18px; border-bottom: 2px solid var(--border); padding-bottom: 6px; }
+.msg-body h2 { font-size: 15px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+.msg-body h3 { font-size: 13.5px; }
+.msg-body h4 { font-size: 13px; color: var(--muted); }
+/* paragraph spacing */
+.msg-body p { margin: 0 0 10px; }
+.msg-body p:last-child { margin-bottom: 0; }
+/* bold/italic */
+.msg-body strong { color: var(--text); font-weight: 700; }
+.msg-body em { font-style: italic; color: var(--body); }
+/* lists */
+.msg-body ul,.msg-body ol { padding-left: 20px; margin: 8px 0 10px; }
+.msg-body li { margin-bottom: 4px; }
+.msg-body ul li::marker { color: var(--accent); }
+/* blockquote */
+.msg-body blockquote {
+  border-left: 3px solid var(--accent); margin: 10px 0;
+  padding: 6px 14px; background: var(--accent-lo);
+  border-radius: 0 var(--r1) var(--r1) 0; color: var(--body);
+}
+/* horizontal rule */
+.msg-body hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+/* links */
+.msg-body a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+/* tool call badge */
+.msg-body .tool-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--raised); border: 1px solid var(--border);
+  border-radius: 99px; padding: 2px 10px; font-size: 11px;
+  color: var(--muted); margin: 2px 2px;
+}
+/* user message bubble */
+.msg-group.user-msg .msg-body {
+  background: var(--accent-lo); border: 1px solid rgba(91,78,240,0.15);
+  border-radius: var(--r2); padding: 10px 14px; margin-left: 37px;
+}
+.msg-body pre {
+  background: var(--raised); border: 1px solid var(--border);
+  border-radius: var(--r1); padding: 12px 14px; margin: 8px 0;
+  overflow-x: auto; font-size: 11.5px;
+  font-family: "SF Mono", "Fira Code", Menlo, monospace;
+  color: var(--text); line-height: 1.6;
+}
+
+/* search in chat */
+#chat-search-wrap {
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  display: none;
+  gap: 8px; align-items: center;
+}
+#chat-search-wrap.visible { display: flex; }
+#chat-search-input {
+  flex: 1; background: var(--raised); border: 1px solid var(--border);
+  border-radius: var(--r1); color: var(--text); font-size: 12px;
+  padding: 5px 10px; outline: none; font-family: inherit;
+  transition: border-color .15s;
+}
+#chat-search-input:focus { border-color: var(--accent); }
+#chat-search-input::placeholder { color: var(--muted); }
+.chat-search-info { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.chat-search-nav { display: flex; gap: 4px; }
+.chat-search-nav button {
+  background: none; border: 1px solid var(--border); border-radius: var(--r1);
+  color: var(--muted); padding: 3px 8px; cursor: pointer; font-family: inherit;
+  font-size: 11px; transition: all .15s;
+}
+.chat-search-nav button:hover { border-color: var(--accent); color: var(--accent); }
+.highlight { background: rgba(91,78,240,0.2); border-radius: 2px; }
+.highlight.current { background: rgba(91,78,240,0.6); color: #fff; }
+.spinner-wrap { display: flex; justify-content: center; padding: 60px; }
+.spinner {
+  width: 20px; height: 20px; border: 2px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* toast */
+#toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 9px 18px; font-size: 12px;
+  color: var(--text); opacity: 0; transition: opacity .2s;
+  pointer-events: none; z-index: 999;
+  white-space: nowrap; max-width: 90vw; overflow: hidden; text-overflow: ellipsis;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+#toast.show { opacity: 1; }
+#toast.ok { border-color: var(--green); color: var(--green); background: var(--green-lo); }
+#toast.err { border-color: var(--danger); color: var(--danger); background: rgba(220,38,38,0.06); }
+
+/* context menu */
+#ctx-menu {
+  position: fixed; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 6px; min-width: 160px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5); z-index: 500;
+  display: none;
+}
+.ctx-item {
+  padding: 7px 12px; border-radius: var(--r1); cursor: pointer;
+  font-size: 12px; color: var(--body); transition: all .1s;
+  display: flex; align-items: center; gap: 8px;
+}
+.ctx-item:hover { background: var(--raised); color: var(--text); }
+.ctx-item.danger:hover { background: rgba(220,38,38,0.08); color: var(--danger); }
+.ctx-sep { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* Stats bar */
+#stats-bar {
+  display: flex; gap: 16px; padding: 8px 28px;
+  border-bottom: 1px solid var(--border); background: var(--surface);
+  flex-shrink: 0; align-items: center;
+}
+.stat-item { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.stat-val { font-size: 15px; font-weight: 700; color: var(--text); }
+.stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.stat-div { width: 1px; height: 28px; background: var(--border); }
+
+/* ── Tabler dashboard theme ─────────────────────────────────────── */
+:root {
+  --bg: #f5f7fb;
+  --surface: #ffffff;
+  --raised: #f6f8fb;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --muted: #64748b;
+  --body: #334155;
+  --text: #172033;
+  --accent: #066fd1;
+  --accent-lo: rgba(6, 111, 209, .075);
+  --accent-hi: #055cac;
+  --green: #0ca678;
+  --green-lo: rgba(12, 166, 120, .08);
+  --warning: #d98500;
+  --danger: #d63939;
+  --r1: 8px;
+  --r2: 12px;
+  --r3: 16px;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, .035), 0 1px 5px rgba(15, 23, 42, .025);
+  --shadow-md: 0 14px 34px rgba(15, 23, 42, .12);
+  --tblr-primary: #066fd1;
+  --tblr-primary-rgb: 6, 111, 209;
+  --tblr-border-color: #e2e8f0;
+  --tblr-body-color: #334155;
+  --tblr-body-bg: #f5f7fb;
+  --tblr-font-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+html, body {
+  background: var(--bg);
+  color: var(--body);
+  font-family: var(--tblr-font-sans-serif);
+  font-size: 13px;
+  line-height: 1.6;
+}
+button, input { font-family: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
+.svg-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.icon {
+  width: 17px; height: 17px; flex: 0 0 auto;
+  fill: none; stroke: currentColor; stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.icon-sm { width: 14px; height: 14px; }
+:where(button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px;
+}
+::selection { color: var(--text); background: rgba(6, 111, 209, .18); }
+
+#app {
+  grid-template-columns: clamp(324px, 30vw, 382px) minmax(0, 1fr);
+  grid-template-rows: 70px minmax(0, 1fr);
+  gap: 0;
+  height: 100vh;
+  height: 100dvh;
+  padding-top: 28px;
+}
+#titlebar { height: 28px; }
+
+/* Provider / application bar */
+#provider-bar {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 20px;
+  padding: 12px 22px;
+  background: rgba(255, 255, 255, .97);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, .015);
+}
+.brand { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.brand-mark {
+  display: grid; place-items: center; width: 38px; height: 38px;
+  flex: 0 0 auto; border-radius: 11px; background: #172033; color: #fff;
+  font-size: 12px; font-weight: 800; letter-spacing: -.4px;
+  box-shadow: 0 4px 12px rgba(23, 32, 51, .16);
+}
+.brand-copy { min-width: 0; }
+.brand-name { color: var(--text); font-size: 14px; font-weight: 700; letter-spacing: .01em; }
+.brand-subtitle {
+  margin-top: 1px; color: var(--muted); font-size: 9px; font-weight: 600;
+  letter-spacing: .12em; white-space: nowrap;
+}
+.provider-tabs {
+  gap: 4px; padding: 4px; border: 1px solid var(--border);
+  border-radius: 11px; background: var(--raised);
+}
+.provider-tab {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-width: 112px; min-height: 34px; padding: 6px 16px;
+  border: 1px solid transparent; border-radius: 8px; background: transparent;
+  color: var(--muted); font-size: 12px; font-weight: 600; line-height: 1.5;
+  cursor: pointer; box-shadow: none;
+}
+.provider-tab:hover { color: var(--text); background: rgba(255, 255, 255, .65); }
+.provider-tab.active, .provider-tab.nav-link.active {
+  color: var(--accent); background: #fff; border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.provider-dot { width: 7px; height: 7px; border-radius: 50%; background: #94a3b8; }
+.provider-tab.active[data-provider="claude"] .provider-dot { background: #ae3ec9; }
+.provider-tab.active[data-provider="codex"] .provider-dot { background: var(--accent); }
+#storage-note {
+  position: relative; justify-self: end; max-width: 330px; padding-left: 14px;
+  color: var(--muted); font-size: 11px; line-height: 1.4;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#storage-note::before {
+  content: ''; position: absolute; left: 0; top: 50%; width: 7px; height: 7px;
+  border-radius: 50%; background: var(--green); transform: translateY(-50%);
+  box-shadow: 0 0 0 3px var(--green-lo);
+}
+#storage-note.error { color: var(--danger); }
+#storage-note.error::before { background: var(--danger); box-shadow: 0 0 0 3px rgba(214,57,57,.08); }
+
+/* Sidebar */
+#sidebar {
+  position: relative; background: var(--surface); border-right: 1px solid var(--border);
+  min-width: 0;
+}
+#sidebar-header {
+  min-height: 70px; padding: 16px 18px 12px; gap: 12px;
+  border-bottom: 0;
+}
+#sidebar-header > div:first-child { flex: 1; min-width: 0; }
+.section-kicker {
+  display: block; margin-bottom: 2px; color: var(--muted);
+  font-size: 9px; font-weight: 700; line-height: 1.4; letter-spacing: .12em;
+  text-transform: uppercase;
+}
+#sidebar-header h1 { color: var(--text); font-size: 17px; font-weight: 700; line-height: 1.35; }
+#count-badge {
+  align-self: center; padding: 4px 9px; border: 0; border-radius: 6px;
+  background: var(--accent-lo); color: var(--accent);
+  font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+#search-wrap { padding: 4px 14px 12px; }
+#search-wrap .input-icon-addon {
+  position: absolute; left: 14px; right: auto; top: 4px; bottom: 12px;
+  width: 36px; min-width: 36px; z-index: 1;
+  color: var(--muted); pointer-events: none;
+}
+#search.form-control {
+  min-height: 38px; padding: 8px 12px 8px 35px;
+  border: 1px solid var(--border); border-radius: 9px;
+  background: var(--raised); color: var(--text); font-size: 12px;
+  box-shadow: none;
+}
+#search.form-control:hover { border-color: #cbd5e1; }
+#search.form-control:focus { background: #fff; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-lo); }
+#search::placeholder { color: #8290a3; }
+#controls {
+  grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;
+  padding: 0 14px 12px; border-bottom: 1px solid var(--border);
+}
+.ftab, #sort-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  min-width: 0; min-height: 30px; padding: 5px 7px;
+  border: 1px solid var(--border); border-radius: 7px;
+  background: #fff; color: var(--muted); font-size: 11px; font-weight: 500;
+  line-height: 1.4; white-space: nowrap; cursor: pointer; box-shadow: none;
+}
+.ftab:hover, #sort-btn:hover { color: var(--accent); border-color: rgba(6,111,209,.35); background: var(--accent-lo); }
+.ftab.active, .ftab.active:hover {
+  color: var(--accent); border-color: rgba(6,111,209,.22); background: var(--accent-lo);
+  font-weight: 600;
+}
+#session-list { padding: 8px 9px 12px; }
+.group-header {
+  padding: 12px 9px 5px; color: #718096; font-size: 10px; font-weight: 700;
+  letter-spacing: .08em;
+}
+.session-item {
+  gap: 8px; margin: 2px 0; padding: 10px 8px;
+  border: 1px solid transparent; border-radius: 9px;
+  background: transparent; transition: background .12s, border-color .12s, box-shadow .12s;
+}
+.session-item:hover { background: var(--raised); border-color: #edf1f5; }
+.session-item.active { background: var(--accent-lo); border-color: rgba(6,111,209,.15); }
+.session-item.selected { background: #f3f7fc; }
+.session-item.selected::before { left: -2px; top: 12px; bottom: 12px; width: 3px; background: var(--accent); }
+.session-item:focus { outline: none; }
+.session-item:focus-visible { background: var(--raised); border-color: var(--accent); }
+.s-check {
+  width: 17px; height: 17px; min-width: 17px; margin-top: 2px; padding: 0;
+  border: 1.5px solid #cbd5e1; border-radius: 5px; background: #fff;
+  color: #fff; line-height: 1; cursor: pointer;
+}
+.s-check:hover { border-color: var(--accent); }
+.session-item.selected .s-check, .s-check.checked { background: var(--accent); border-color: var(--accent); }
+.s-body { align-self: center; cursor: pointer; }
+.s-title { font-size: 12.5px; font-weight: 600; line-height: 1.55; }
+.session-item.active .s-title { color: #055ca8; }
+.s-meta { gap: 5px; margin-top: 4px; }
+.s-time, .s-project { color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.s-count {
+  padding: 0 5px; border: 0; border-radius: 4px; background: #edf2f7;
+  color: #526174; font-size: 9px; font-weight: 600;
+}
+.s-kind {
+  padding: 0 5px; border: 0; border-radius: 4px;
+  background: rgba(174,62,201,.08); color: #8f32a6; font-size: 9px;
+}
+.s-project { max-width: 94px; }
+.s-star {
+  display: grid; place-items: center; width: 25px; height: 25px; margin-top: -2px;
+  padding: 0; border: 0; border-radius: 6px; background: transparent;
+  color: #a2adbb; font-size: 15px; line-height: 1; cursor: pointer;
+}
+.s-star:hover { color: var(--warning); background: rgba(217,133,0,.07); }
+.s-star.on { color: var(--warning); }
+.proj-header {
+  gap: 8px; margin: 3px 0; padding: 10px 8px;
+  border: 1px solid transparent; border-radius: 9px;
+}
+.proj-header:hover { background: var(--raised); border-color: #edf1f5; }
+.proj-header.open { background: var(--accent-lo); border-color: rgba(6,111,209,.12); }
+.proj-arrow { width: 10px; color: var(--muted); font-size: 9px; }
+.proj-icon { display: grid; place-items: center; color: #718096; }
+.proj-name { font-size: 12.5px; font-weight: 600; }
+.proj-meta, .proj-time { color: var(--muted); font-size: 10px; }
+.proj-selall {
+  display: grid; place-items: center; width: 26px; height: 26px; padding: 0;
+  border: 1px solid var(--border); border-radius: 6px; background: #fff;
+  color: var(--muted); cursor: pointer;
+}
+.proj-selall:hover { color: var(--accent); border-color: var(--accent); }
+.proj-item { margin-left: 16px; }
+
+/* Sidebar actions */
+#sidebar-footer { gap: 8px; padding: 12px 14px 11px; background: #fbfcfe; }
+.btn {
+  flex: none; min-height: 34px; padding: 6px 11px; border-radius: 8px;
+  font-size: 11px; font-weight: 500; line-height: 1.45; box-shadow: none;
+}
+.btn:hover { transform: none; }
+.btn.primary { color: #fff; background: var(--accent); border-color: var(--accent); }
+.btn.primary:hover { color: #fff; background: var(--accent-hi); border-color: var(--accent-hi); }
+.btn-outline-success { color: #087f5b; border-color: rgba(12,166,120,.32); background: #fff; }
+.btn-outline-success:hover { color: #087f5b; border-color: var(--green); background: var(--green-lo); }
+#btn-open-favs { width: 100%; min-height: 35px; font-weight: 600; }
+#action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+#action-btns .btn { width: 100%; }
+#utility-actions { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+#utility-actions .btn { min-width: 0; padding: 5px 3px; font-size: 10px; white-space: nowrap; }
+#utility-actions .btn.is-on { color: var(--accent); border-color: rgba(6,111,209,.35); background: var(--accent-lo); }
+#btn-fav.is-on { color: var(--warning); border-color: rgba(217,133,0,.3); background: rgba(217,133,0,.06); }
+#btn-autostart.is-on { color: #087f5b; border-color: rgba(12,166,120,.3); background: var(--green-lo); }
+#btn-update.has-update { color: #055ca8; border-color: rgba(6,111,209,.42); background: var(--accent-lo); font-weight: 700; }
+#update-banner {
+  position: fixed; top: 74px; right: 20px; z-index: 85; display: flex; align-items: flex-start; gap: 12px;
+  width: min(430px, calc(100vw - 32px)); padding: 14px; border: 1px solid rgba(6,111,209,.28);
+  border-radius: 12px; background: #fff; box-shadow: 0 16px 42px rgba(18,42,76,.18);
+}
+#update-banner[hidden], #update-modal[hidden] { display: none !important; }
+.update-banner-copy { flex: 1; min-width: 0; }
+#update-banner-title { color: var(--text); font-size: 13px; font-weight: 700; line-height: 1.5; }
+#update-banner-name { margin-top: 3px; color: var(--muted); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.update-banner-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+.update-banner-actions .btn { min-height: 30px; }
+#update-later { padding: 2px 5px; border: 0; background: transparent; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; }
+#update-later:hover { color: var(--text); }
+#update-modal {
+  position: fixed; inset: 0; z-index: 110; display: grid; place-items: center; padding: 16px;
+  background: rgba(15,23,42,.28);
+}
+.update-dialog {
+  width: min(520px, 100%); padding: 20px; border: 1px solid var(--border); border-radius: 14px;
+  background: #fff; box-shadow: 0 22px 70px rgba(15,23,42,.24);
+}
+.update-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.update-dialog-header h2 { margin: 0; color: var(--text); font-size: 18px; }
+.update-dialog-header p { margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+#update-close { width: 30px; height: 30px; padding: 0; }
+.update-form { display: grid; gap: 13px; margin-top: 18px; }
+.update-form label { display: grid; gap: 6px; color: var(--body); font-size: 11px; font-weight: 600; }
+.update-form input[type="text"] { width: 100%; min-height: 36px; padding: 7px 10px; font-size: 12px; }
+.update-checkbox { display: flex !important; grid-template-columns: none; align-items: center; gap: 8px !important; font-weight: 500 !important; }
+.update-checkbox input { margin: 0; }
+#update-status { min-height: 34px; padding: 8px 10px; border-radius: 8px; background: var(--raised); color: var(--muted); font-size: 11px; line-height: 1.55; overflow-wrap: anywhere; }
+#update-status.error { color: var(--danger); background: rgba(214,57,57,.06); }
+.update-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+#status-bar { min-height: 17px; font-size: 10px; line-height: 1.6; }
+
+/* Detail header and stat cards */
+#main { position: relative; min-width: 0; background: var(--bg); }
+#main-toolbar {
+  gap: 14px; min-height: 78px; padding: 14px 22px;
+  border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.session-heading { flex: 1; min-width: 120px; }
+#session-title {
+  max-width: 100%; color: var(--text); font-size: 16px; font-weight: 700; line-height: 1.45;
+}
+#session-title.empty { color: var(--muted); font-size: 14px; font-weight: 500; font-style: normal; }
+.session-actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; min-width: 0; }
+.tag {
+  display: inline-flex; align-items: center; max-width: 138px; padding: 4px 8px;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--raised);
+  color: var(--muted); font-size: 10px; line-height: 1.5;
+}
+.tag.green { color: #087f5b; border-color: rgba(12,166,120,.2); background: var(--green-lo); }
+#chat-search-btn, #open-btn {
+  display: none; align-items: center; justify-content: center; gap: 5px;
+  min-height: 34px; padding: 6px 11px; border-radius: 8px;
+  font-size: 11px; font-weight: 600; white-space: nowrap; cursor: pointer;
+}
+#chat-search-btn { border: 1px solid var(--border); background: #fff; color: var(--body); }
+#chat-search-btn:hover { color: var(--accent); border-color: rgba(6,111,209,.35); }
+#open-btn { border: 1px solid var(--accent); background: var(--accent); color: #fff; }
+#open-btn:hover { background: var(--accent-hi); opacity: 1; }
+#stats-bar {
+  display: none; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;
+  padding: 14px 22px 0; border: 0; background: transparent;
+}
+.stat-item {
+  display: flex; flex-direction: row; align-items: center; gap: 10px;
+  min-width: 0; min-height: 70px; padding: 12px 13px;
+  border: 1px solid var(--border); border-radius: 11px; background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+.stat-icon {
+  display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 auto;
+  border-radius: 8px; background: var(--accent-lo); color: var(--accent);
+}
+.stat-copy { min-width: 0; }
+.stat-val {
+  overflow: hidden; color: var(--text); font-size: 15px; font-weight: 700;
+  line-height: 1.45; text-overflow: ellipsis; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.stat-val.stat-date { font-size: 11px; font-weight: 600; }
+.stat-label {
+  margin-top: 1px; color: var(--muted); font-size: 9px; font-weight: 500;
+  letter-spacing: .04em; text-transform: none;
+}
+#stat-project { max-width: 100%; font-size: 12px; }
+
+/* Conversation */
+#chat-area { padding: 18px 22px 32px; }
+#empty-state { gap: 10px; max-width: 480px; margin: auto; padding: 36px 20px; text-align: center; }
+.empty-icon {
+  width: 58px; height: 58px; margin-bottom: 5px; border: 1px solid rgba(6,111,209,.12);
+  border-radius: 16px; background: var(--accent-lo); color: var(--accent);
+  box-shadow: none; opacity: 1;
+}
+.empty-icon .icon { width: 27px; height: 27px; }
+.empty-heading { color: var(--text); font-size: 17px; font-weight: 700; }
+#empty-state p { margin: 0; color: var(--body); font-size: 12px; }
+#empty-state small { color: var(--muted); font-size: 11px; line-height: 1.7; }
+.empty-features { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; margin-top: 8px; }
+.empty-features span {
+  padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px;
+  background: #fff; color: var(--muted); font-size: 10px;
+}
+#load-more-wrap { max-width: 880px; margin: 0 auto 14px; text-align: center; }
+.chat-boundary { padding: 8px; color: var(--muted); font-size: 10px; text-align: center; }
+.msg-group { max-width: 880px; margin: 0 auto 20px; }
+.msg-header { gap: 9px; margin-bottom: 7px; }
+.avatar { width: 29px; height: 29px; border-radius: 8px; font-size: 10px; }
+.avatar.user { background: #4263eb; }
+.avatar.assistant { background: #0ca678; }
+.msg-role { color: var(--text); font-size: 12px; font-weight: 700; }
+.msg-time { color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.msg-body {
+  max-width: calc(100% - 39px); margin-left: 39px; padding: 13px 16px;
+  border: 1px solid var(--border); border-radius: 4px 12px 12px 12px;
+  background: #fff; color: var(--body); font-size: 13px; line-height: 1.85;
+  box-shadow: 0 1px 2px rgba(15,23,42,.02); overflow-wrap: anywhere;
+}
+.msg-group.user-msg .msg-body {
+  margin-left: 39px; padding: 12px 16px; border: 1px solid rgba(66,99,235,.14);
+  border-radius: 12px 4px 12px 12px; background: rgba(66,99,235,.055); color: #26365b;
+}
+.msg-body code {
+  padding: 1px 5px; border: 1px solid #e1e7ef; border-radius: 4px;
+  background: #f1f5f9; color: #055ca8; font-size: 11.5px;
+}
+.msg-body pre {
+  margin: 10px 0; padding: 15px 16px; border: 1px solid #26344d;
+  border-radius: 9px; background: #172033; color: #e5edf8;
+  font-size: 11.5px; line-height: 1.7; white-space: pre; tab-size: 2;
+}
+.msg-body pre code { border: 0; background: transparent; color: inherit; }
+.code-lang { top: 8px; right: 11px; color: #a8b6cc; font-size: 9px; }
+.msg-body h1 { font-size: 18px; border-bottom-color: var(--border); }
+.msg-body h2 { font-size: 15px; border-bottom-color: var(--border); }
+.msg-body h3 { font-size: 14px; }
+.msg-body blockquote { background: #f3f7fc; border-left-color: var(--accent); }
+.msg-body .tool-call-row { margin: 5px 0; }
+.msg-body .tool-badge {
+  padding: 2px 8px; border-color: var(--border); background: var(--raised);
+  color: var(--muted); font-size: 10px;
+}
+.highlight { background: #fff0a8; color: #382f03; }
+.highlight.current { background: #f59f00; color: #211700; }
+
+/* Search, progress, menus and feedback */
+#chat-search-wrap { padding: 9px 22px; background: #fbfcfe; }
+#chat-search-input.form-control {
+  min-height: 34px; padding: 6px 11px; border: 1px solid var(--border);
+  border-radius: 8px; background: #fff; color: var(--text); font-size: 12px;
+}
+.chat-search-info { min-width: 52px; color: var(--muted); font-size: 10px; text-align: right; }
+.chat-search-nav { gap: 5px; }
+.chat-search-nav button {
+  display: grid; place-items: center; width: 30px; height: 30px; padding: 0;
+  border: 1px solid var(--border); border-radius: 7px; background: #fff;
+  color: var(--muted); cursor: pointer;
+}
+.chat-search-nav button:hover { color: var(--accent); border-color: var(--accent); }
+.spinner-wrap { padding: 54px 20px; text-align: center; }
+.spinner { width: 23px; height: 23px; border-color: #dbe4ee; border-top-color: var(--accent); }
+.loading-label { margin-top: 11px; color: var(--muted); font-size: 11px; }
+.list-state, .detail-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 9px; min-height: 160px; padding: 26px 16px; text-align: center;
+}
+.list-state-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; background: var(--raised); color: var(--muted); }
+.list-state-message { max-width: 280px; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+.list-state.error .list-state-icon { color: var(--danger); background: rgba(214,57,57,.07); }
+.list-state.error .list-state-message { color: var(--danger); }
+.detail-state { height: 100%; color: var(--muted); }
+.detail-state.error { color: var(--danger); }
+#toast {
+  bottom: 22px; padding: 10px 16px; border-radius: 9px; background: #172033;
+  color: #fff; border-color: #172033; box-shadow: var(--shadow-md);
+  font-size: 11px; transform: translate(-50%, 8px);
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+#toast.ok { color: #d3f9eb; border-color: #087f5b; background: #087f5b; }
+#toast.err { color: #fff; border-color: #c92a2a; background: #c92a2a; }
+#ctx-menu {
+  min-width: 208px; padding: 6px; border: 1px solid var(--border);
+  border-radius: 11px; background: #fff; box-shadow: var(--shadow-md);
+}
+.ctx-item {
+  width: 100%; padding: 8px 10px; border: 0; border-radius: 7px;
+  background: transparent; color: var(--body); font-size: 11px; text-align: left;
+}
+.ctx-item:hover, .ctx-item:focus-visible { color: var(--text); background: var(--raised); }
+.ctx-item.danger:hover { color: var(--danger); background: rgba(214,57,57,.07); }
+.ctx-sep { background: var(--border); }
+
+@media (max-width: 1100px) {
+  #app { grid-template-columns: 320px minmax(0, 1fr); }
+  #provider-bar { gap: 12px; padding-left: 16px; padding-right: 16px; }
+  .brand-subtitle { display: none; }
+  .provider-tab { min-width: 100px; }
+  #storage-note { max-width: 250px; font-size: 10px; }
+  #stats-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat-item { min-height: 62px; }
+}
+@media (max-width: 940px) {
+  #app { grid-template-columns: 300px minmax(0, 1fr); }
+  .brand-copy { display: none; }
+  #main-toolbar { gap: 8px; padding-left: 16px; padding-right: 16px; }
+  #session-title { font-size: 14px; }
+  .session-actions { gap: 5px; }
+  .tag { max-width: 100px; }
+  #chat-search-btn, #open-btn { padding-left: 9px; padding-right: 9px; }
+  #stats-bar { padding-left: 16px; padding-right: 16px; }
+  #chat-area { padding-left: 16px; padding-right: 16px; }
+  .msg-body { max-width: calc(100% - 30px); margin-left: 30px; }
+  .msg-group.user-msg .msg-body { margin-left: 30px; }
+}
+@media (max-height: 760px) {
+  #app { grid-template-rows: 62px minmax(0, 1fr); }
+  #provider-bar { padding-top: 8px; padding-bottom: 8px; }
+  #sidebar-header { min-height: 60px; padding-top: 11px; padding-bottom: 8px; }
+  #controls { padding-bottom: 9px; }
+  #sidebar-footer { gap: 6px; padding-top: 9px; padding-bottom: 8px; }
+  .btn, #btn-open-favs { min-height: 31px; }
+}
+</style>
+</head>
+<body class="theme-light">
+<svg class="svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.7-3.7"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 14h4l2 2h4l2-2h4"/></symbol>
+  <symbol id="i-message" viewBox="0 0 24 24"><path d="M20 15a3 3 0 0 1-3 3H9l-5 3V7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z"/><path d="M8 9h8M8 13h5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4m8-4v4M3 10h18"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3m6 0h4"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6m0-6-9 9"/><path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/></symbol>
+  <symbol id="i-chevron-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/></symbol>
+</svg>
+<div id="titlebar" aria-hidden="true"></div>
+
+<div id="app">
+  <header id="provider-bar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">KK</div>
+      <div class="brand-copy">
+        <div class="brand-name">会话工作台</div>
+        <div class="brand-subtitle">LOCAL SESSION MANAGER</div>
+      </div>
+    </div>
+    <div class="provider-tabs" role="tablist" aria-label="会话提供方">
+      <button type="button" class="provider-tab nav-link active" id="provider-tab-claude" data-provider="claude" role="tab" aria-selected="true" aria-controls="sidebar" aria-label="查看 Claude 会话" tabindex="0">
+        <span class="provider-dot" aria-hidden="true"></span>Claude
+      </button>
+      <button type="button" class="provider-tab nav-link" id="provider-tab-codex" data-provider="codex" role="tab" aria-selected="false" aria-controls="sidebar" aria-label="查看 Codex 会话" tabindex="-1">
+        <span class="provider-dot" aria-hidden="true"></span>Codex
+      </button>
+    </div>
+    <div id="storage-note" role="status" aria-live="polite" title="正在读取存储统计">存储统计加载中…</div>
+  </header>
+
+  <aside id="sidebar" role="tabpanel" aria-labelledby="provider-tab-claude" aria-label="会话库">
+    <div id="sidebar-header">
+      <div>
+        <span class="section-kicker">Session library</span>
+        <h1>本地会话</h1>
+      </div>
+      <span class="badge" id="count-badge" aria-label="当前结果数量">0</span>
+    </div>
+
+    <div id="search-wrap" class="input-icon">
+      <span class="input-icon-addon" aria-hidden="true"><svg class="icon icon-sm"><use href="#i-search"></use></svg></span>
+      <input id="search" class="form-control" type="search" placeholder="搜索标题、项目或 Session ID" autocomplete="off" spellcheck="false" aria-label="搜索会话标题、项目或 Session ID">
+    </div>
+
+    <div id="controls" role="group" aria-label="会话筛选与排序">
+      <button type="button" class="ftab active" data-filter="all" aria-pressed="true" aria-label="显示全部会话">全部</button>
+      <button type="button" class="ftab" data-filter="fav" aria-pressed="false" aria-label="只显示收藏会话">★ 收藏</button>
+      <button type="button" class="ftab" data-filter="recent" aria-pressed="false" aria-label="只显示最近三十条会话">最近 30</button>
+      <button type="button" class="ftab" data-filter="main" aria-pressed="false" aria-label="只显示主会话">主会话</button>
+      <button type="button" class="ftab" data-filter="proj" aria-pressed="false" aria-label="按项目目录分组">目录</button>
+      <button type="button" id="sort-btn" title="切换排序" aria-label="当前按时间排序，点击切换为按名称排序">↓ 时间</button>
+    </div>
+
+    <div id="session-list" aria-label="会话列表" aria-busy="false"></div>
+
+    <div id="sidebar-footer">
+      <button type="button" class="btn btn-outline-success" id="btn-open-favs" title="在一个新 Terminal 窗口中打开当前 Provider 的全部收藏，每个会话一个标签页；不会关闭或清理现有窗口" aria-label="批量打开当前 Provider 的收藏会话到一个 Terminal 窗口的多个标签页">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-star"></use></svg>打开收藏（单窗多标签）
+      </button>
+      <div id="action-btns">
+        <button type="button" class="btn btn-primary primary" id="btn-open" aria-label="打开当前会话">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-external"></use></svg>打开会话
+        </button>
+        <button type="button" class="btn btn-outline-success" id="btn-terminal" title="将选中的会话打开到一个新 Terminal 窗口的多个顶部标签页；不会关闭或清理现有窗口" aria-label="批量打开选中会话到一个 Terminal 窗口的多个标签页">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-terminal"></use></svg>单窗多标签
+        </button>
+      </div>
+      <div id="utility-actions" role="group" aria-label="列表工具">
+        <button type="button" class="btn btn-outline-secondary" id="btn-fav" title="收藏或取消收藏当前会话" aria-label="收藏当前会话" aria-pressed="false">☆ 收藏</button>
+        <button type="button" class="btn btn-outline-secondary" id="btn-autostart" title="开机自启" aria-label="切换开机自动恢复收藏会话" aria-pressed="false">⏻ 自启</button>
+        <button type="button" class="btn btn-outline-secondary" id="btn-update" title="检查 GitHub 新版本" aria-label="设置并检查 GitHub 新版本">⇧ 更新</button>
+      </div>
+      <div id="status-bar" role="status" aria-live="polite">加载中…</div>
+    </div>
+  </aside>
+
+  <main id="main" aria-label="会话详情">
+    <div id="main-toolbar">
+      <div class="session-heading">
+        <span class="section-kicker">Session detail</span>
+        <div id="session-title" class="empty">选择一个会话查看内容</div>
+      </div>
+      <div class="session-actions">
+        <span class="tag" id="tag-count" style="display:none"></span>
+        <span class="tag" id="tag-project" style="display:none"></span>
+        <button type="button" class="btn" id="chat-search-btn" title="会话内搜索 (⌘G)" aria-label="在当前会话消息中搜索">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-search"></use></svg>搜索
+        </button>
+        <button type="button" class="btn btn-primary" id="open-btn" aria-label="恢复并打开当前会话">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-external"></use></svg>恢复会话
+        </button>
+      </div>
+    </div>
+
+    <div id="chat-search-wrap" role="search" aria-label="会话内搜索">
+      <input id="chat-search-input" class="form-control" type="search" placeholder="在当前已加载消息中搜索…" autocomplete="off" spellcheck="false" aria-label="在当前已加载消息中搜索">
+      <span class="chat-search-info" id="chat-search-info" aria-live="polite"></span>
+      <div class="chat-search-nav">
+        <button type="button" id="chat-search-prev" aria-label="上一个搜索结果" title="上一个结果"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-chevron-up"></use></svg></button>
+        <button type="button" id="chat-search-next" aria-label="下一个搜索结果" title="下一个结果"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-chevron-down"></use></svg></button>
+        <button type="button" id="chat-search-close" aria-label="关闭会话内搜索" title="关闭搜索"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-close"></use></svg></button>
+      </div>
+    </div>
+
+    <div id="stats-bar" role="region" aria-label="当前会话统计">
+      <div class="stat-item card">
+        <span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-message"></use></svg></span>
+        <div class="stat-copy"><div class="stat-val" id="stat-msgs">0</div><div class="stat-label">消息数量</div></div>
+      </div>
+      <div class="stat-item card">
+        <span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-clock"></use></svg></span>
+        <div class="stat-copy"><div class="stat-val stat-date" id="stat-date">—</div><div class="stat-label">最后活跃</div></div>
+      </div>
+      <div class="stat-item card">
+        <span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-calendar"></use></svg></span>
+        <div class="stat-copy"><div class="stat-val stat-date" id="stat-created">—</div><div class="stat-label">创建时间</div></div>
+      </div>
+      <div class="stat-item card">
+        <span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-folder"></use></svg></span>
+        <div class="stat-copy"><div class="stat-val" id="stat-project">—</div><div class="stat-label">所属项目</div></div>
+      </div>
+    </div>
+
+    <div id="chat-area" tabindex="0" aria-label="会话消息，最新内容在底部">
+      <div id="empty-state">
+        <div class="empty-icon" aria-hidden="true"><svg class="icon"><use href="#i-inbox"></use></svg></div>
+        <div class="empty-heading">继续上次的工作</div>
+        <p>从左侧会话库选择一条记录，消息将在这里显示。</p>
+        <small>Claude 与 Codex 独立浏览，最新内容优先定位，向上可加载更早消息。</small>
+        <div class="empty-features" aria-label="可用功能">
+          <span>⌘F 搜索会话</span><span>⌘G 搜索消息</span><span>Space 多选</span><span>Terminal 批量恢复</span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="ctx-menu" class="dropdown-menu" role="menu" aria-label="会话操作菜单">
+  <button type="button" class="ctx-item dropdown-item" id="ctx-open" role="menuitem" aria-label="打开会话">↗ 打开会话</button>
+  <button type="button" class="ctx-item dropdown-item" id="ctx-terminal" role="menuitem" aria-label="打开此会话">⊞ 打开此会话</button>
+  <div class="ctx-sep" role="separator"></div>
+  <button type="button" class="ctx-item dropdown-item" id="ctx-fav" role="menuitem" aria-label="收藏或取消收藏会话">★ 收藏 / 取消</button>
+  <button type="button" class="ctx-item dropdown-item" id="ctx-export" role="menuitem" aria-label="导出为 Markdown">↓ 导出为 Markdown</button>
+  <div class="ctx-sep" role="separator"></div>
+  <button type="button" class="ctx-item dropdown-item" id="ctx-copy" role="menuitem" aria-label="复制 Session ID">⎘ 复制 Session ID</button>
+  <button type="button" class="ctx-item dropdown-item" id="ctx-copy-path" role="menuitem" aria-label="复制项目路径">⎘ 复制项目路径</button>
+  <button type="button" class="ctx-item dropdown-item" id="ctx-copy-file" role="menuitem" aria-label="复制会话文件路径">⎘ 复制文件路径</button>
+  <div class="ctx-sep" role="separator"></div>
+  <button type="button" class="ctx-item dropdown-item danger" id="ctx-reveal" role="menuitem" aria-label="在系统文件管理器中显示会话文件">▱ 在文件管理器中显示</button>
+</div>
+
+<section id="update-banner" aria-label="新版本提醒" hidden>
+  <div class="update-banner-copy">
+    <div id="update-banner-title" role="status" aria-live="polite"></div>
+    <div id="update-banner-name"></div>
+    <div class="update-banner-actions">
+      <button type="button" class="btn btn-primary" id="update-open-release">查看发布页升级</button>
+      <button type="button" class="btn btn-outline-secondary" id="update-dismiss">忽略此版本</button>
+    </div>
+  </div>
+  <button type="button" id="update-later" aria-label="稍后提醒" title="稍后提醒">×</button>
+</section>
+
+<div id="update-modal" hidden>
+  <section class="update-dialog" role="dialog" aria-modal="true" aria-labelledby="update-dialog-title" aria-describedby="update-dialog-description">
+    <div class="update-dialog-header">
+      <div>
+        <h2 id="update-dialog-title">应用更新</h2>
+        <p id="update-dialog-description">当前版本 <strong id="update-current-version">—</strong>。检查公开 GitHub 仓库的最新稳定 Release；不会自动下载或替换应用。</p>
+      </div>
+      <button type="button" class="btn btn-outline-secondary" id="update-close" aria-label="关闭更新面板">×</button>
+    </div>
+    <div class="update-form">
+      <label for="update-repository">GitHub 仓库（owner/repository）
+        <input id="update-repository" class="form-control" type="text" placeholder="例如：owner/claude-session-manager" autocomplete="off" spellcheck="false" maxlength="201">
+      </label>
+      <label class="update-checkbox" for="update-auto-check">
+        <input id="update-auto-check" type="checkbox">
+        启动时自动检查；应用运行期间每 6 小时再检查一次
+      </label>
+      <div id="update-status" role="status" aria-live="polite">填写仓库后即可检查。无仓库配置时不会发起网络请求。</div>
+    </div>
+    <div class="update-dialog-actions">
+      <button type="button" class="btn btn-outline-secondary" id="update-save">保存设置</button>
+      <button type="button" class="btn btn-primary" id="update-check-now">保存并检查更新</button>
+    </div>
+  </section>
+</div>
+
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────
+let invoke;
+function makeProviderState() {
+  return {
+    allSessions: [], activeSession: null, selectedIds: new Set(),
+    currentFilter: 'all', sortOrder: 'time', searchText: '',
+    expandedProjects: new Set(), loaded: false, loading: false, error: '',
+    loadSeq: 0, storageStats: null, storageLoading: false, storageSeq: 0, storageError: '', storageRefreshQueued: false,
+    chatMsgs: [], chatOffset: 0, chatTotal: 0, chatHasMore: false,
+    chatTotalExact: false, chatLoaded: false, chatSnapshotLen: null, chatSnapshotToken: null
+  };
+}
+const providerStates = { claude: makeProviderState(), codex: makeProviderState() };
+let currentProvider = 'claude';
+const IS_WINDOWS = /Windows/i.test(navigator.userAgent);
+const MODIFIER_LABEL = IS_WINDOWS ? 'Ctrl' : '⌘';
+function modifierShortcut(key) { return IS_WINDOWS ? `${MODIFIER_LABEL}+${key}` : `${MODIFIER_LABEL}${key}`; }
+let allSessions    = providerStates.claude.allSessions;
+let filteredList   = [];
+let currentFilter  = 'all';
+let sortOrder      = 'time'; // 'time' | 'name'
+let activeSession  = null;
+let selectedIds    = new Set();
+let ctxTarget      = null;
+// chat pagination — each page is oldest-first; older pages are prepended
+let chatMsgs       = [];     // all msgs loaded so far (oldest first)
+let chatOffset     = 0;      // number of newer messages for the backend to skip next
+let chatTotal      = 0;      // exact total, or a known lower bound when total_exact=false
+let chatHasMore    = false;
+let chatTotalExact = false;
+let chatLoaded     = false;
+let chatSnapshotLen = null;   // fixed source length shared by all pages of this detail view
+let chatSnapshotToken = null; // rejects replacement while allowing append-only pagination
+let chatLoadingMore= false;
+let activationToken= 0;      // race guard for message loads and provider switches
+
+// ── Helpers ───────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function clipCopy(text, label) {
+  if (!text) { toast(label + '为空', 'err'); return; }
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(
+      () => toast('已复制 ' + label, 'ok'),
+      () => toast('复制失败', 'err')
+    );
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast('已复制 ' + label, 'ok');
+  }
+}
+
+// ── Toast ─────────────────────────────────────────────────────────
+function toast(msg, type = '', dur = type === 'err' ? 12000 : 3500) {
+  const el = document.getElementById('toast');
+  const text = String(msg);
+  el.textContent = text.slice(0, type === 'err' ? 1200 : 240);
+  el.title = text;
+  el.className = type ? `show ${type}` : 'show';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.className = '', dur);
+}
+
+// ── Markdown render ────────────────────────────────────────────────
+function renderMd(raw) {
+  // NUL is reserved for internal placeholders. Replace literal NULs before
+  // extraction so message text cannot impersonate BLOCK/SPAN entries.
+  let source = String(raw).replaceAll('\x00', '�');
+  // Strategy: protect all code spans with placeholders BEFORE esc() so
+  // their contents are never double-escaped and never mutated by later passes.
+  const blocks = [];  // fenced code blocks (raw content)
+  const spans  = [];  // inline code spans (raw content)
+
+  // 1. Extract fenced code blocks from raw text. The info string runs to the
+  // required line ending, so C#/F# keep their complete language and code.
+  let s = source.replace(/```([^\r\n`]*)\r?\n([\s\S]*?)```/g, (_, lang, code) => {
+    blocks.push({ lang: lang.trim(), code });
+    return `\x00BLOCK${blocks.length - 1}\x00`;
+  });
+
+  // 2. Extract inline code spans from raw text
+  s = s.replace(/`([^`\n]+)`/g, (_, c) => {
+    spans.push(c);
+    return `\x00SPAN${spans.length - 1}\x00`;
+  });
+
+  // 3. HTML-escape the remaining text (safe — placeholders contain no HTML chars)
+  s = esc(s);
+
+  // 4. Headings
+  s = s.replace(/^(#{1,4}) (.+)$/gm, (_, h, text) =>
+    `<h${h.length}>${text}</h${h.length}>`);
+
+  // 5. Bold / italic (on escaped text — * and _ are not HTML special)
+  s = s.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  s = s.replace(/\*\*(.+?)\*\*/g,     '<strong>$1</strong>');
+  s = s.replace(/__(.+?)__/g,          '<strong>$1</strong>');
+  s = s.replace(/\*([^*\n]+)\*/g,      '<em>$1</em>');
+  s = s.replace(/_([^_\n]+)_/g,        '<em>$1</em>');
+
+  // 6. Blockquote — esc() has turned > into &gt;
+  s = s.replace(/^(&gt;) (.+)$/gm, '<blockquote>$2</blockquote>');
+  s = s.replace(/<\/blockquote>\n<blockquote>/g, '\n');
+
+  // 7. Horizontal rule
+  s = s.replace(/^[-*_]{3,}$/gm, '<hr>');
+
+  // 8. Lists (after emphasis so bullet * doesn't pair with text *)
+  s = s.replace(/((?:^[*\-+] .+(?:\n|$))+)/gm, match => {
+    const items = match.trim().split('\n')
+      .map(l => `<li>${l.replace(/^[*\-+] /, '')}</li>`).join('');
+    return `<ul>${items}</ul>`;
+  });
+  s = s.replace(/((?:^\d+\. .+(?:\n|$))+)/gm, match => {
+    const items = match.trim().split('\n')
+      .map(l => `<li>${l.replace(/^\d+\. /, '')}</li>`).join('');
+    return `<ol>${items}</ol>`;
+  });
+
+  // 9. Tool-call badge [工具调用: X, Y]
+  s = s.replace(/\[工具调用: ([^\]]+)\]/g, (_, tools) =>
+    `<div class="tool-call-row">${tools.split(',').map(t =>
+      `<span class="tool-badge">⚙ ${t.trim()}</span>`).join('')}</div>`);
+
+  // 10. Paragraph wrapping — only for non-block content
+  const paras = s.split(/\n{2,}/);
+  s = paras.map(p => {
+    p = p.trim();
+    if (!p) return '';
+    if (/^<(h[1-6]|ul|ol|blockquote|hr|div|\x00BLOCK)/.test(p)) return p;
+    // preserve single newlines as <br> inside paragraphs
+    return `<p>${p.replace(/\n/g, '<br>')}</p>`;
+  }).join('\n');
+
+  // 11. Restore inline code spans (escaped content, no further processing)
+  s = s.replace(/\x00SPAN(\d+)\x00/g, (_, i) =>
+    `<code>${esc(spans[parseInt(i)])}</code>`);
+
+  // 12. Restore fenced code blocks
+  s = s.replace(/\x00BLOCK(\d+)\x00/g, (_, i) => {
+    const { lang, code } = blocks[parseInt(i)];
+    const label = lang ? `<span class="code-lang">${esc(lang)}</span>` : '';
+    return `<pre tabindex="0" aria-label="${lang ? esc(lang) + ' 代码块' : '代码块'}">${label}${esc(code)}</pre>`;
+  });
+
+  // 13. Fix invalid <p><pre> wrapping
+  s = s.replace(/<p>(<pre[\s\S]*?<\/pre>)<\/p>/g, '$1');
+
+  return s;
+}
+
+// ── Provider-aware filter / sort ───────────────────────────────────
+function providerOf(s, fallback = 'claude') {
+  return s?.provider === 'codex' || s?.provider === 'claude' ? s.provider : fallback;
+}
+function providerLabel(provider) { return provider === 'codex' ? 'Codex' : 'Claude'; }
+function sessionKey(s) {
+  return JSON.stringify([providerOf(s), String(s?.session_id || ''), String(s?.file_path || '')]);
+}
+function sameSessionIdentity(a, b) {
+  return !!a && !!b && sessionKey(a) === sessionKey(b);
+}
+function favoriteKey(s) { return `${providerOf(s)}:${String(s?.session_id || '')}`; }
+function sessionKind(s) { return s?.session_kind === 'subagent' ? 'subagent' : 'main'; }
+function normalizeSession(s, fallbackProvider = 'claude') {
+  return {
+    ...s,
+    provider: providerOf(s, fallbackProvider),
+    session_kind: sessionKind(s),
+    message_count_loaded: s.message_count_loaded !== false
+  };
+}
+function messageCountBadge(s) {
+  if (s.message_count_error) {
+    return '<span class="s-count" aria-label="消息数量统计失败" title="消息数量统计失败">?</span>';
+  }
+  if (s.message_count_loaded === false) {
+    return '<span class="s-count" aria-label="消息数量统计中" title="正在后台统计消息数量">…</span>';
+  }
+  const count = Number(s.message_count);
+  const showZero = providerOf(s) === 'codex';
+  return Number.isFinite(count) && (count > 0 || (showZero && count === 0))
+    ? `<span class="s-count" aria-label="${count} 条消息">${count}</span>` : '';
+}
+function subagentBadge(s) {
+  return sessionKind(s) === 'subagent' ? '<span class="s-kind">子线程</span>' : '';
+}
+
+// Large Codex rollouts are counted one file at a time after the list appears.
+// Only the visible provider is polled, but an already-started count may finish
+// while Claude is visible; update the Codex-owned state in either case.
+const codexCountQueue = [];
+const codexCountQueued = new Set();
+let codexCountRunning = false;
+let codexCountRenderTimer = null;
+
+function scheduleCodexCountRender() {
+  if (codexCountRenderTimer) return;
+  codexCountRenderTimer = setTimeout(() => {
+    codexCountRenderTimer = null;
+    if (currentProvider === 'codex' && providerStates.codex.loaded) applyFilter();
+  }, 200);
+}
+
+function scheduleCodexMessageCounts(sessions) {
+  for (const s of sessions) {
+    if (providerOf(s) !== 'codex' || s.message_count_loaded !== false || !s.file_path) continue;
+    if (codexCountQueued.has(s.file_path)) continue;
+    codexCountQueued.add(s.file_path);
+    codexCountQueue.push({ filePath: s.file_path, sessionId: s.session_id });
+  }
+  if (!codexCountRunning) processCodexMessageCounts();
+}
+
+async function processCodexMessageCounts() {
+  if (codexCountRunning) return;
+  const next = codexCountQueue.shift();
+  if (!next) return;
+  codexCountRunning = true;
+  let count = 0;
+  let failed = false;
+  try {
+    count = Number(await invoke('get_codex_message_count', { filePath: next.filePath }));
+    if (!Number.isFinite(count) || count < 0) throw new Error('invalid message count');
+  } catch (_) {
+    failed = true;
+  }
+  const state = providerStates.codex;
+  const target = state.allSessions.find(s => s.session_id === next.sessionId && s.file_path === next.filePath);
+  if (target) {
+    target.message_count = failed ? 0 : count;
+    target.message_count_loaded = true;
+    target.message_count_error = failed;
+    if (currentProvider === 'codex') {
+      if (sameSessionIdentity(activeSession, target)) updateActiveSessionUI(target);
+      scheduleCodexCountRender();
+    }
+  }
+  codexCountQueued.delete(next.filePath);
+  codexCountRunning = false;
+  if (codexCountQueue.length) setTimeout(processCodexMessageCounts, 0);
+}
+
+function captureSessionListFocus(listEl) {
+  const active = document.activeElement;
+  if (!active || !listEl.contains(active)) return null;
+  const row = active.closest('.session-item');
+  if (row) return { kind: 'session', key: row.dataset.key };
+  const project = active.closest('.proj-header');
+  if (project) return { kind: 'project', path: project.dataset.path };
+  return null;
+}
+function restoreSessionListFocus(listEl, snapshot) {
+  if (!snapshot) return;
+  let target = null;
+  if (snapshot.kind === 'session') {
+    target = [...listEl.querySelectorAll('.session-item')]
+      .find(el => el.dataset.key === snapshot.key);
+  } else if (snapshot.kind === 'project') {
+    target = [...listEl.querySelectorAll('.proj-header')]
+      .find(el => el.dataset.path === snapshot.path);
+  }
+  target?.focus({ preventScroll: true });
+}
+
+function applyFilter() {
+  const kw = document.getElementById('search').value.trim().toLowerCase();
+  let list = allSessions.filter(s => {
+    if (currentFilter === 'fav' && !s.favorited) return false;
+    if (currentFilter === 'main' && sessionKind(s) !== 'main') return false;
+    if (!kw) return true;
+    return (s.title||'').toLowerCase().includes(kw) ||
+           (s.project_path||'').toLowerCase().includes(kw) ||
+           (s.session_id||'').toLowerCase().startsWith(kw);
+  });
+  if (currentFilter === 'recent') {
+    list = list.slice()
+      .sort((a,b) => (b.updated_at_ts || 0) - (a.updated_at_ts || 0))
+      .slice(0, 30);
+  }
+  if (sortOrder === 'name') {
+    list = list.slice().sort((a,b) => String(a.title||'').localeCompare(String(b.title||''), 'zh'));
+  }
+  filteredList = list;
+  const visibleIds = new Set(filteredList.map(sessionKey));
+  selectedIds = new Set([...selectedIds].filter(id => visibleIds.has(id)));
+  if (currentFilter === 'proj') { renderProjectTree(); return; }
+  rerender();
+}
+
+// ── Project tree view ─────────────────────────────────────────────
+let expandedProjects = new Set(); // which project paths are expanded
+
+function pathSegments(p) {
+  return String(p || '').split(/[\\/]+/).filter(Boolean);
+}
+function pathBaseName(p) {
+  return pathSegments(p).pop() || '';
+}
+function parentProjectPath(p) {
+  const value = String(p || '').replace(/[\\/]+$/, '');
+  const index = Math.max(value.lastIndexOf('/'), value.lastIndexOf('\\'));
+  if (index > 0) return value.slice(0, index);
+  if (index === 0) return value.slice(0, 1);
+  return '';
+}
+function shortPath(p) {
+  const shortened = String(p || '')
+    .replace(/^\\\\\?\\UNC\\/i, '\\\\')
+    .replace(/^\\\\\?\\(?=[A-Za-z]:[\\/])/, '')
+    .replace(/^\/Users\/[^/]+(?=\/|$)/, '~')
+    .replace(/^[A-Za-z]:[\\/]Users[\\/][^\\/]+(?=[\\/]|$)/i, '~');
+  return shortened.replace(/[\\/]+$/, '') || '(根目录)';
+}
+
+function renderProjectTree() {
+  const listEl = document.getElementById('session-list');
+  const focusSnapshot = captureSessionListFocus(listEl);
+  const scrollTop = listEl.scrollTop;
+  listEl.setAttribute('aria-busy', 'false');
+  // Group the same filtered, sorted snapshot used by the flat list. This keeps
+  // Session ID search, favorites/main filters and name sorting consistent.
+  const groups = Object.create(null);
+  filteredList.forEach(s => {
+    const key = s.project_path || '(未知目录)';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(s);
+  });
+
+  // Sort projects by most-recent session
+  const sortedProjects = Object.entries(groups).sort((a, b) => {
+    const aTs = Math.max(...a[1].map(s => s.updated_at_ts||0));
+    const bTs = Math.max(...b[1].map(s => s.updated_at_ts||0));
+    return bTs - aTs;
+  });
+
+  document.getElementById('count-badge').textContent = sortedProjects.length + ' 个项目';
+  let html = '';
+
+  sortedProjects.forEach(([path, sessions]) => {
+    const isExpanded = expandedProjects.has(path);
+    const favCount = sessions.filter(s => s.favorited).length;
+    const short = shortPath(path);
+    const folderName = pathBaseName(short) || short;
+    const parentPath = parentProjectPath(short);
+    const recent = sessions.reduce((latest, s) =>
+      (s.updated_at_ts || 0) > (latest?.updated_at_ts || 0) ? s : latest, null)?.updated_at || '';
+    const selCount = sessions.filter(s => selectedIds.has(sessionKey(s))).length;
+
+    html += `<div class="proj-header ${isExpanded?'open':''}" data-path="${esc(path)}" role="button" tabindex="0" aria-expanded="${isExpanded}" aria-label="${isExpanded ? '收起' : '展开'}项目 ${esc(folderName)}">
+      <span class="proj-arrow" aria-hidden="true">${isExpanded ? '▼' : '▶'}</span>
+      <span class="proj-icon" aria-hidden="true"><svg class="icon icon-sm"><use href="#i-folder"></use></svg></span>
+      <div class="proj-info">
+        <div class="proj-name" title="${esc(path)}">${esc(folderName)}</div>
+        <div class="proj-meta">${parentPath ? esc(parentPath)+' · ' : ''}${sessions.length} 条${favCount?` · ★${favCount}`:''}${selCount?` · 选${selCount}`:''}</div>
+      </div>
+      <span class="proj-time">${esc(recent)}</span>
+      <button type="button" class="proj-selall" data-path="${esc(path)}" title="全选此目录" aria-label="全选项目 ${esc(folderName)} 中的会话">⊠</button>
+    </div>`;
+
+    if (isExpanded) {
+      sessions.forEach(s => {
+        const isActive = sameSessionIdentity(activeSession, s);
+        const isSel = selectedIds.has(sessionKey(s));
+        const safeTitle = esc(s.title || '(无标题)');
+        html += `<div class="session-item proj-item ${isActive?'active':''} ${isSel?'selected':''}" data-id="${esc(s.session_id)}" data-key="${esc(sessionKey(s))}" tabindex="0" aria-current="${isActive ? 'true' : 'false'}">
+          <button type="button" class="s-check${isSel?' checked':''}" aria-label="选择会话 ${safeTitle}" aria-pressed="${isSel}"></button>
+          <div class="s-body">
+            <div class="s-title" title="${safeTitle}">${safeTitle}</div>
+            <div class="s-meta">
+              <span class="s-time">${esc(s.updated_at||'')}</span>
+              ${messageCountBadge(s)}
+              ${subagentBadge(s)}
+            </div>
+          </div>
+          <button type="button" class="s-star ${s.favorited?'on':''}" aria-label="${s.favorited ? '取消收藏' : '收藏'}会话 ${safeTitle}" aria-pressed="${s.favorited}">★</button>
+        </div>`;
+      });
+    }
+  });
+
+  if (!html) html = `<div class="list-state">
+    <span class="list-state-icon" aria-hidden="true"><svg class="icon"><use href="#i-folder"></use></svg></span>
+    <div class="list-state-message">没有找到匹配的项目目录</div>
+  </div>`;
+  listEl.innerHTML = html;
+  listEl.scrollTop = scrollTop;
+
+  // Bind project header clicks
+  listEl.querySelectorAll('.proj-header').forEach(el => {
+    const toggle = () => {
+      const path = el.dataset.path;
+      if (expandedProjects.has(path)) expandedProjects.delete(path);
+      else expandedProjects.add(path);
+      renderProjectTree();
+    };
+    el.addEventListener('click', e => {
+      if (e.target.classList.contains('proj-selall')) return;
+      toggle();
+    });
+    el.addEventListener('keydown', e => {
+      if (e.target !== el || (e.key !== 'Enter' && e.key !== ' ')) return;
+      e.preventDefault();
+      toggle();
+    });
+  });
+
+  // Bind select-all per project
+  listEl.querySelectorAll('.proj-selall').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const path = btn.dataset.path;
+      const ids = (groups[path]||[]).map(sessionKey);
+      const allSel = ids.every(id => selectedIds.has(id));
+      ids.forEach(id => allSel ? selectedIds.delete(id) : selectedIds.add(id));
+      renderProjectTree();
+      updateStatus();
+    });
+  });
+
+  // Bind session item clicks inside tree
+  listEl.querySelectorAll('.proj-item').forEach(el => {
+    const key = el.dataset.key;
+    const s = allSessions.find(x => sessionKey(x) === key);
+    if (!s) return;
+    const check = el.querySelector('.s-check');
+    const toggleSelected = () => {
+      if (selectedIds.has(key)) selectedIds.delete(key); else selectedIds.add(key);
+      const isSelected = selectedIds.has(key);
+      el.classList.toggle('selected', isSelected);
+      check.classList.toggle('checked', isSelected);
+      check.setAttribute('aria-pressed', String(isSelected));
+      updateStatus();
+    };
+    el.querySelector('.s-body').addEventListener('click', () => activateSession(s));
+    check.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleSelected();
+    });
+    el.querySelector('.s-star').addEventListener('click', async e => {
+      e.stopPropagation();
+      await doToggleFav(s);
+    });
+    el.addEventListener('contextmenu', e => { e.preventDefault(); showCtxMenu(e, s); });
+    el.addEventListener('keydown', e => {
+      if (e.target !== el) return;
+      if (e.key === 'Enter') activateSession(s);
+      if (e.key === ' ') { e.preventDefault(); toggleSelected(); }
+    });
+  });
+
+  restoreSessionListFocus(listEl, focusSnapshot);
+  updateStatus();
+}
+
+// calendar boundary helpers
+function dayStart(ts) { // ts in seconds
+  const d = new Date(ts * 1000);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() / 1000;
+}
+function calendarDayOffset(ts, days) {
+  const d = new Date(ts * 1000);
+  d.setDate(d.getDate() + days);
+  return dayStart(d.getTime() / 1000);
+}
+
+// ── Render session list ────────────────────────────────────────────
+function renderList() {
+  const listEl = document.getElementById('session-list');
+  const focusSnapshot = captureSessionListFocus(listEl);
+  listEl.setAttribute('aria-busy', 'false');
+  const scrollTop = listEl.scrollTop; // preserve scroll
+  document.getElementById('count-badge').textContent = filteredList.length;
+
+  if (!filteredList.length) {
+    const kw = document.getElementById('search').value.trim();
+    listEl.innerHTML = `<div class="list-state">
+      <span class="list-state-icon" aria-hidden="true"><svg class="icon"><use href="#i-search"></use></svg></span>
+      <div class="list-state-message">没有找到会话${kw ? ` “<strong>${esc(kw)}</strong>”` : ''}<br>试试更换关键词或筛选条件。</div>
+      <button type="button" class="btn btn-outline-secondary" id="clear-search-btn">清除搜索</button>
+    </div>`;
+    document.getElementById('clear-search-btn').addEventListener('click', clearSearch);
+    updateStatus();
+    return;
+  }
+
+  // Group by calendar day when sorted by time
+  let html = '';
+  if (sortOrder === 'time') {
+    const nowTs = Date.now() / 1000;
+    const todayStart    = dayStart(nowTs);
+    const yesterdayStart= calendarDayOffset(todayStart, -1);
+    const weekStart     = calendarDayOffset(todayStart, -6);
+    let lastGroup = null;
+    filteredList.forEach(s => {
+      const ts = s.updated_at_ts || 0;
+      const g = ts >= todayStart    ? 'today' :
+                ts >= yesterdayStart ? 'yesterday' :
+                ts >= weekStart      ? 'week' : 'older';
+      if (g !== lastGroup) {
+        const label = g === 'today' ? '今天' : g === 'yesterday' ? '昨天' :
+                      g === 'week'  ? '本周' : '更早';
+        html += `<div class="group-header">${label}</div>`;
+        lastGroup = g;
+      }
+      html += sessionItemHtml(s);
+    });
+  } else {
+    filteredList.forEach(s => { html += sessionItemHtml(s); });
+  }
+
+  listEl.innerHTML = html;
+  listEl.scrollTop = scrollTop; // restore scroll
+
+  // Bind events
+  listEl.querySelectorAll('.session-item').forEach(el => {
+    const key = el.dataset.key;
+    const s = allSessions.find(x => sessionKey(x) === key);
+    if (!s) return;
+    const check = el.querySelector('.s-check');
+    const toggleSelected = () => {
+      if (selectedIds.has(key)) selectedIds.delete(key); else selectedIds.add(key);
+      const isSelected = selectedIds.has(key);
+      el.classList.toggle('selected', isSelected);
+      check.classList.toggle('checked', isSelected);
+      check.setAttribute('aria-pressed', String(isSelected));
+      updateStatus();
+    };
+    el.querySelector('.s-body').addEventListener('click', () => activateSession(s));
+    check.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleSelected();
+    });
+    el.querySelector('.s-star').addEventListener('click', async e => {
+      e.stopPropagation();
+      await doToggleFav(s);
+    });
+    el.addEventListener('contextmenu', e => {
+      e.preventDefault(); showCtxMenu(e, s);
+    });
+    el.addEventListener('keydown', e => {
+      if (e.target !== el) return;
+      if (e.key === 'Enter') activateSession(s);
+      if (e.key === ' ') { e.preventDefault(); toggleSelected(); }
+    });
+  });
+
+  restoreSessionListFocus(listEl, focusSnapshot);
+  updateStatus();
+}
+
+function sessionItemHtml(s) {
+  const proj = pathBaseName(s.project_path) || '';
+  const isActive = sameSessionIdentity(activeSession, s);
+  const isSelected = selectedIds.has(sessionKey(s));
+  const safeTitle = esc(s.title || '(无标题)');
+  return `<div class="session-item ${isActive?'active':''} ${isSelected?'selected':''}" data-id="${esc(s.session_id)}" data-key="${esc(sessionKey(s))}" tabindex="0" aria-current="${isActive ? 'true' : 'false'}">
+    <button type="button" class="s-check${isSelected?' checked':''}" aria-label="选择会话 ${safeTitle}" aria-pressed="${isSelected}"></button>
+    <div class="s-body">
+      <div class="s-title" title="${safeTitle}">${safeTitle}</div>
+      <div class="s-meta">
+        <span class="s-time">${esc(s.updated_at||'')}</span>
+        ${messageCountBadge(s)}
+        ${subagentBadge(s)}
+        ${proj ? `<span class="s-project" title="${esc(s.project_path)}">${esc(proj)}</span>` : ''}
+      </div>
+    </div>
+    <button type="button" class="s-star ${s.favorited?'on':''}" aria-label="${s.favorited ? '取消收藏' : '收藏'}会话 ${safeTitle}" aria-pressed="${s.favorited}">★</button>
+  </div>`;
+}
+
+function clearSearch() {
+  document.getElementById('search').value = '';
+  applyFilter();
+}
+
+function rerender() {
+  if (currentFilter === 'proj') renderProjectTree(); else renderList();
+}
+
+function updateStatus() {
+  const bar = document.getElementById('status-bar');
+  if (selectedIds.size > 0) {
+    bar.textContent = `已选 ${selectedIds.size} 个  ·  共 ${allSessions.length} 个会话`;
+  } else if (activeSession) {
+    bar.textContent = activeSession.project_path || `会话 ${activeSession.session_id.slice(0,8)}`;
+  } else {
+    bar.textContent = `共 ${allSessions.length} 个会话`;
+  }
+  const selectAll = document.getElementById('btn-selall');
+  if (selectAll) {
+    const visibleIds = filteredList.map(sessionKey);
+    const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.has(id));
+    selectAll.classList.toggle('is-on', allSelected);
+    selectAll.setAttribute('aria-pressed', String(allSelected));
+  }
+  syncTerminalButtons();
+}
+
+// ── Activate session ───────────────────────────────────────────────
+function syncFavoriteButton(favorited) {
+  const btn = document.getElementById('btn-fav');
+  btn.style.color = '';
+  btn.classList.toggle('is-on', favorited);
+  btn.textContent = favorited ? '★ 已收藏' : '☆ 收藏';
+  btn.setAttribute('aria-pressed', String(favorited));
+  btn.setAttribute('aria-label', favorited ? '取消收藏当前会话' : '收藏当前会话');
+}
+
+function updateActiveSessionUI(s) {
+  document.getElementById('session-title').textContent = s.title || '(无标题)';
+  document.getElementById('session-title').classList.remove('empty');
+  document.getElementById('open-btn').style.display = 'inline-flex';
+  document.getElementById('open-btn').title = `使用 ${providerLabel(providerOf(s))} 恢复此会话`;
+  const count = Number(s.message_count);
+  const countPending = s.message_count_loaded === false;
+  const hasCount = Number.isFinite(count) && (count > 0 || (providerOf(s) === 'codex' && count === 0));
+  const tcTag = document.getElementById('tag-count');
+  tcTag.textContent = s.message_count_error ? '数量不可用' : countPending ? '统计中…' : hasCount ? `${count} 条` : '';
+  tcTag.style.display = s.message_count_error || countPending || hasCount ? '' : 'none';
+  tcTag.className = 'tag' + (s.favorited ? ' green' : '');
+  const proj = pathBaseName(s.project_path) || s.project_slug || '';
+  const pjTag = document.getElementById('tag-project');
+  if (proj) { pjTag.textContent = proj; pjTag.title = s.project_path||''; pjTag.style.display = ''; }
+  else pjTag.style.display = 'none';
+  document.getElementById('chat-search-btn').style.display = 'inline-flex';
+
+  document.getElementById('stats-bar').style.display = 'grid';
+  document.getElementById('stat-msgs').textContent = hasCount ? count : '—';
+  document.getElementById('stat-date').textContent = s.updated_at || '—';
+  document.getElementById('stat-created').textContent = s.created_at || '—';
+  document.getElementById('stat-project').textContent =
+    pathBaseName(s.project_path) || '—';
+  document.getElementById('stat-project').title = s.project_path || '';
+  syncFavoriteButton(s.favorited);
+  syncOpenButtons();
+}
+
+function clearActiveSessionUI() {
+  chatSearchClose();
+  const title = document.getElementById('session-title');
+  title.textContent = '选择一个会话查看内容';
+  title.classList.add('empty');
+  document.getElementById('open-btn').style.display = 'none';
+  document.getElementById('tag-count').style.display = 'none';
+  document.getElementById('tag-project').style.display = 'none';
+  document.getElementById('chat-search-btn').style.display = 'none';
+  document.getElementById('stats-bar').style.display = 'none';
+  syncFavoriteButton(false);
+  const chatArea = document.getElementById('chat-area');
+  chatArea.setAttribute('aria-busy', 'false');
+  chatArea.innerHTML = `<div id="empty-state">
+    <div class="empty-icon" aria-hidden="true"><svg class="icon"><use href="#i-inbox"></use></svg></div>
+    <div class="empty-heading">继续上次的工作</div>
+    <p>从左侧会话库选择一条记录，消息将在这里显示。</p>
+    <small>Claude 与 Codex 独立浏览，最新内容优先定位，向上可加载更早消息。</small>
+    <div class="empty-features" aria-label="可用功能">
+      <span>${modifierShortcut('F')} 搜索会话</span><span>${modifierShortcut('G')} 搜索消息</span><span>Space 多选</span><span>Terminal 批量恢复</span>
+    </div>
+  </div>`;
+  syncOpenButtons();
+}
+
+async function activateSession(s, force = false) {
+  if (!s) return;
+  const sameSession = sameSessionIdentity(activeSession, s);
+  const initialLoadInFlight = document.getElementById('chat-area').getAttribute('aria-busy') === 'true';
+  if (!force && sameSession && (chatLoaded || initialLoadInFlight)) return;
+  activeSession = s;
+  chatMsgs = []; chatOffset = 0; chatTotal = 0; chatHasMore = false; chatTotalExact = false;
+  chatLoaded = false; chatLoadingMore = false; chatSnapshotLen = null; chatSnapshotToken = null;
+  const token = ++activationToken;
+
+  chatSearchClose();
+  updateActiveSessionUI(s);
+  rerender();
+
+  const chatArea = document.getElementById('chat-area');
+  chatArea.setAttribute('aria-busy', 'true');
+  chatArea.innerHTML = `<div class="spinner-wrap" role="status">
+    <div class="spinner" style="margin:auto" aria-hidden="true"></div>
+    <div class="loading-label">正在加载 ${providerLabel(providerOf(s))} 会话…</div>
+  </div>`;
+
+  try {
+    const page = await invoke('get_messages', { sessionId: s.session_id, projectPath: s.project_path || '', filePath: s.file_path, offset: 0, limit: 200, provider: providerOf(s) });
+    if (token !== activationToken) return;
+    // The backend scans backward from the end; messages within the page are oldest-first.
+    chatMsgs = page.messages;
+    chatOffset = page.next_offset;
+    chatTotal = page.total;
+    chatHasMore = page.has_more;
+    chatTotalExact = page.total_exact;
+    chatSnapshotLen = page.snapshot_len;
+    chatSnapshotToken = page.snapshot_token || null;
+    chatLoaded = true;
+    chatArea.setAttribute('aria-busy', 'false');
+    renderChat(false);
+    if (document.getElementById('chat-search-wrap').classList.contains('visible')
+        && document.getElementById('chat-search-input').value.trim()) {
+      chatSearchRun();
+    }
+  } catch(e) {
+    if (token !== activationToken) return;
+    chatLoaded = false;
+    chatArea.setAttribute('aria-busy', 'false');
+    chatArea.innerHTML = `<div class="detail-state error" role="alert">
+      <span class="list-state-icon" aria-hidden="true"><svg class="icon"><use href="#i-info"></use></svg></span>
+      <div>加载失败：${esc(String(e))}</div>
+    </div>`;
+  }
+}
+
+// ── Render chat ────────────────────────────────────────────────────
+function renderChat(preserveScroll) {
+  const chatArea = document.getElementById('chat-area');
+  const prevScrollTop = chatArea.scrollTop;
+
+  if (!chatMsgs.length) {
+    chatArea.innerHTML = `<div class="detail-state" role="status">
+      <span class="list-state-icon" aria-hidden="true"><svg class="icon"><use href="#i-message"></use></svg></span>
+      <div>这个会话暂时没有可显示的消息</div>
+    </div>`;
+    return;
+  }
+
+  const msgs = chatMsgs; // oldest-first within chunk
+
+  const loadedCount = chatMsgs.length;
+  const progressText = chatTotalExact
+    ? `已加载 ${loadedCount}/${chatTotal} 条`
+    : `已加载 ${loadedCount} 条`;
+
+  // Load-more at top loads OLDER messages. An inexact total is only a lower bound,
+  // so never subtract next_offset from it or present it as a final total.
+  const loadMoreHtml = chatHasMore
+    ? `<div id="load-more-wrap">
+        <button type="button" id="load-more-btn" class="btn btn-outline-secondary" aria-label="加载更早的消息">
+          ↑ 加载更早的消息 · ${progressText}
+        </button></div>`
+    : `<div class="chat-boundary">— ${chatTotalExact ? `已加载全部 ${chatTotal} 条消息` : progressText} —</div>`;
+
+  const assistantName = providerLabel(providerOf(activeSession));
+  const assistantAvatar = providerOf(activeSession) === 'codex' ? 'X' : 'C';
+  const msgsHtml = msgs.map(m => `
+    <article class="msg-group ${m.role === 'user' ? 'user-msg' : ''}" aria-label="${m.role === 'user' ? '用户' : assistantName} 的消息">
+      <div class="msg-header">
+        <div class="avatar ${esc(m.role)}" aria-hidden="true">${m.role==='user'?'U':assistantAvatar}</div>
+        <span class="msg-role">${m.role==='user'?'You':assistantName}</span>
+        ${m.timestamp ? `<span class="msg-time">${esc(m.timestamp)}</span>` : ''}
+      </div>
+      <div class="msg-body">${renderMd(m.text.length > 12000 ? m.text.slice(0,12000)+'\n\n…[内容过长，已截断]' : m.text)}</div>
+    </article>`).join('');
+
+  chatArea.innerHTML = loadMoreHtml + msgsHtml;
+
+  // Scroll behavior
+  if (preserveScroll) {
+    // After prepending older messages: maintain view position
+    const newScrollHeight = chatArea.scrollHeight;
+    chatArea.scrollTop = newScrollHeight - (chatArea._prevScrollHeight || 0) + prevScrollTop;
+  } else {
+    // Initial load: scroll to bottom (newest)
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+
+  // Bind load-more
+  const btn = document.getElementById('load-more-btn');
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      if (chatLoadingMore || !activeSession || !chatHasMore) return;
+      const session = activeSession;
+      const sessionProvider = providerOf(session);
+      const token = activationToken;
+      chatLoadingMore = true;
+      btn.disabled = true;
+      btn.textContent = '加载中…';
+      chatArea._prevScrollHeight = chatArea.scrollHeight;
+      try {
+        // Request the next older page by skipping the already-loaded newer messages.
+        const page = await invoke('get_messages', {
+          sessionId: session.session_id,
+          projectPath: session.project_path || '',
+          filePath: session.file_path,
+          offset: chatOffset,
+          limit: 200,
+          provider: sessionProvider,
+          snapshotLen: chatSnapshotLen,
+          snapshotToken: chatSnapshotToken
+        });
+        if (token !== activationToken) return;
+        chatMsgs = [...page.messages, ...chatMsgs]; // prepend older msgs
+        chatOffset = page.next_offset;
+        chatTotal = page.total;
+        chatHasMore = page.has_more;
+        chatTotalExact = page.total_exact;
+        chatSnapshotLen = page.snapshot_len;
+        chatSnapshotToken = page.snapshot_token || null;
+        chatLoaded = true;
+        chatSearchClose();
+        renderChat(true);
+      } catch(e) {
+        if (token === activationToken) {
+          toast('加载更多失败: ' + String(e), 'err');
+          btn.disabled = false;
+          btn.textContent = '↑ 加载更早的消息';
+        }
+      } finally {
+        if (token === activationToken) chatLoadingMore = false;
+      }
+    });
+  }
+}
+
+// ── Favorite ───────────────────────────────────────────────────────
+const favoriteOverrides = new Map();
+let favoriteMutationVersion = 0;
+async function doToggleFav(s) {
+  const provider = providerOf(s);
+  const state = providerStates[provider];
+  const key = favoriteKey(s);
+  const current = state.allSessions.find(item => sameSessionIdentity(item, s)) || s;
+  const prev = current.favorited;
+  try {
+    const nowFav = await invoke('toggle_favorite', { sessionId: current.session_id, provider });
+    favoriteOverrides.set(key, { value: nowFav, version: ++favoriteMutationVersion });
+    // Favorites are stored by provider/session ID. Update every current object
+    // with that backend identity, including a row installed by a late refresh.
+    state.allSessions.forEach(item => {
+      if (favoriteKey(item) === key) item.favorited = nowFav;
+    });
+    if (ctxTarget && favoriteKey(ctxTarget) === key) {
+      ctxTarget = state.allSessions.find(item => sameSessionIdentity(item, ctxTarget)) || ctxTarget;
+      ctxTarget.favorited = nowFav;
+    }
+    if (activeSession && favoriteKey(activeSession) === key) {
+      document.getElementById('tag-count').className = 'tag' + (nowFav ? ' green' : '');
+      syncFavoriteButton(nowFav);
+    }
+    if (currentProvider === provider) applyFilter();
+    toast(nowFav ? '★ 已收藏' : '已取消收藏', nowFav ? 'ok' : '');
+  } catch(e) {
+    current.favorited = prev; // rollback
+    toast('操作失败: ' + String(e), 'err');
+  }
+}
+
+// ── Context menu ───────────────────────────────────────────────────
+function showCtxMenu(e, s) {
+  ctxTarget = s;
+  const menu = document.getElementById('ctx-menu');
+  document.getElementById('ctx-fav').textContent = s.favorited ? '☆ 取消收藏' : '★ 收藏';
+  menu.style.display = 'block';
+  menu.style.maxHeight = Math.max(80, window.innerHeight - 8) + 'px';
+  menu.style.overflowY = 'auto';
+  menu.style.left = '0px';
+  menu.style.top = '0px';
+  const mw = menu.offsetWidth, mh = menu.offsetHeight;
+  const margin = 4;
+  menu.style.left = Math.max(margin, Math.min(e.clientX, window.innerWidth - mw - margin)) + 'px';
+  menu.style.top  = Math.max(margin, Math.min(e.clientY, window.innerHeight - mh - margin)) + 'px';
+  menu.querySelector('.ctx-item')?.focus({ preventScroll: true });
+}
+function hideCtxMenu() { document.getElementById('ctx-menu').style.display = 'none'; }
+
+document.addEventListener('click', hideCtxMenu);
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || getComputedStyle(document.getElementById('ctx-menu')).display === 'none') return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  hideCtxMenu();
+});
+document.addEventListener('scroll', hideCtxMenu, true);
+document.getElementById('ctx-menu').addEventListener('keydown', e => {
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  e.preventDefault();
+  e.stopPropagation();
+  const items = [...e.currentTarget.querySelectorAll('.ctx-item')];
+  const current = items.indexOf(document.activeElement);
+  const delta = e.key === 'ArrowDown' ? 1 : -1;
+  items[(current + delta + items.length) % items.length]?.focus();
+});
+
+document.getElementById('ctx-open').addEventListener('click',  async () => { hideCtxMenu(); if (ctxTarget) await doOpen(ctxTarget); });
+document.getElementById('ctx-terminal').addEventListener('click',  async () => { hideCtxMenu(); if (ctxTarget) await doOpen(ctxTarget); });
+document.getElementById('ctx-fav').addEventListener('click',   async () => { hideCtxMenu(); if (ctxTarget) await doToggleFav(ctxTarget); });
+document.getElementById('ctx-export').addEventListener('click', async () => {
+  hideCtxMenu();
+  const target = ctxTarget;
+  if (!target) return;
+  const targetProvider = providerOf(target);
+  try {
+    const result = await invoke('export_session_markdown', {
+      sessionId: target.session_id,
+      projectPath: target.project_path || '',
+      filePath: target.file_path,
+      provider: targetProvider,
+      title: target.title,
+      updatedAt: target.updated_at,
+    });
+    if (result.cleanup_warning) {
+      toast(`已导出 ${result.message_count} 条到 ${result.file_path}，但${result.cleanup_warning}`, 'err');
+    } else {
+      toast(`已完整导出 ${result.message_count} 条到 ${result.file_path}`, 'ok');
+    }
+  } catch(e) { toast('导出失败: ' + String(e), 'err'); }
+});
+document.getElementById('ctx-copy').addEventListener('click',      () => { hideCtxMenu(); if (ctxTarget) clipCopy(ctxTarget.session_id, 'Session ID'); });
+document.getElementById('ctx-copy-path').addEventListener('click', () => { hideCtxMenu(); if (ctxTarget) clipCopy(ctxTarget.project_path, '项目路径'); });
+document.getElementById('ctx-copy-file').addEventListener('click', () => { hideCtxMenu(); if (ctxTarget) clipCopy(ctxTarget.file_path, '文件路径'); });
+document.getElementById('ctx-reveal').addEventListener('click', async () => {
+  hideCtxMenu();
+  if (!ctxTarget) return;
+  try { await invoke('reveal_in_finder', { filePath: ctxTarget.file_path }); }
+  catch(e) { toast('文件管理器打开失败: ' + String(e), 'err'); }
+});
+
+// ── Chat in-session search ─────────────────────────────────────────
+let chatSearchMatches = [];
+let chatSearchIdx = -1;
+
+function chatSearchOpen() {
+  document.getElementById('chat-search-wrap').classList.add('visible');
+  document.getElementById('chat-search-input').focus();
+}
+function chatSearchClose() {
+  document.getElementById('chat-search-wrap').classList.remove('visible');
+  document.getElementById('chat-search-input').value = '';
+  chatSearchClear();
+}
+function chatSearchClear() {
+  chatSearchMatches = []; chatSearchIdx = -1;
+  document.getElementById('chat-search-info').textContent = '';
+  const highlightParents = new Set();
+  document.querySelectorAll('.highlight').forEach(el => {
+    if (el.parentNode) highlightParents.add(el.parentNode);
+    el.replaceWith(document.createTextNode(el.textContent));
+  });
+  // Clearing one search must restore the original text-node boundaries. A
+  // split preceding node changes whole-string Unicode casing on the next run
+  // (for example, a standalone Σ no longer sees its original word context).
+  highlightParents.forEach(parent => parent.normalize());
+}
+function lowercaseWithOriginalOffsets(text) {
+  const lower = text.toLowerCase();
+  // The common case needs no maps. Only lowercase expansions such as İ → i̇
+  // can move a folded UTF-16 offset away from its original source position.
+  if (lower.length === text.length) return { lower, starts: null, ends: null };
+  // Keep the whole-string result: per-code-point lowercasing loses contextual
+  // mappings such as Greek final sigma (Σ at a word end must become ς, not σ).
+  // Unicode's default context-sensitive mappings preserve the folded UTF-16
+  // length contributed by each original code point, so simple lowercase lengths
+  // still provide the original-offset map.
+  const starts = [];
+  const ends = [];
+  let foldedLength = 0;
+  for (let originalStart = 0; originalStart < text.length;) {
+    const codePoint = text.codePointAt(originalStart);
+    const character = String.fromCodePoint(codePoint);
+    const originalEnd = originalStart + character.length;
+    const characterFoldedLength = character.toLowerCase().length;
+    for (let index = 0; index < characterFoldedLength; index++) {
+      starts.push(originalStart);
+      ends.push(originalEnd);
+    }
+    foldedLength += characterFoldedLength;
+    originalStart = originalEnd;
+  }
+  if (foldedLength !== lower.length) {
+    throw new Error('无法建立 Unicode 搜索偏移映射');
+  }
+  return { lower, starts, ends };
+}
+function chatSearchRun() {
+  chatSearchClear();
+  const kw = document.getElementById('chat-search-input').value.trim();
+  if (!kw) return;
+  const chatArea = document.getElementById('chat-area');
+  const bodies = chatArea.querySelectorAll('.msg-body');
+  const kwLower = kw.toLowerCase();
+  bodies.forEach(body => {
+    // Walk text nodes
+    const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+    textNodes.forEach(tn => {
+      const text = tn.textContent;
+      const folded = lowercaseWithOriginalOffsets(text);
+      let pos = 0, originalPos = 0, idx;
+      const frags = [];
+      while ((idx = folded.lower.indexOf(kwLower, pos)) !== -1) {
+        const foldedEnd = idx + kwLower.length;
+        const originalStart = folded.starts ? folded.starts[idx] : idx;
+        const originalEnd = folded.starts ? folded.ends[foldedEnd - 1] : foldedEnd;
+        if (originalStart > originalPos) frags.push(document.createTextNode(text.slice(originalPos, originalStart)));
+        const span = document.createElement('span');
+        span.className = 'highlight';
+        span.textContent = text.slice(originalStart, originalEnd);
+        frags.push(span);
+        chatSearchMatches.push(span);
+        pos = foldedEnd;
+        originalPos = originalEnd;
+      }
+      if (frags.length) {
+        if (originalPos < text.length) frags.push(document.createTextNode(text.slice(originalPos)));
+        tn.replaceWith(...frags);
+      }
+    });
+  });
+  const info = document.getElementById('chat-search-info');
+  if (!chatSearchMatches.length) { info.textContent = '无匹配'; return; }
+  chatSearchIdx = 0;
+  chatSearchHighlight();
+}
+function chatSearchHighlight() {
+  chatSearchMatches.forEach((el, i) => {
+    el.className = i === chatSearchIdx ? 'highlight current' : 'highlight';
+  });
+  chatSearchMatches[chatSearchIdx]?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  document.getElementById('chat-search-info').textContent =
+    `${chatSearchIdx + 1} / ${chatSearchMatches.length}`;
+}
+function chatSearchNav(dir) {
+  if (!chatSearchMatches.length) return;
+  chatSearchIdx = (chatSearchIdx + dir + chatSearchMatches.length) % chatSearchMatches.length;
+  chatSearchHighlight();
+}
+
+document.getElementById('chat-search-btn').addEventListener('click', chatSearchOpen);
+document.getElementById('chat-search-close').addEventListener('click', chatSearchClose);
+document.getElementById('chat-search-prev').addEventListener('click', () => chatSearchNav(-1));
+document.getElementById('chat-search-next').addEventListener('click', () => chatSearchNav(1));
+let chatSearchTimer;
+document.getElementById('chat-search-input').addEventListener('input', () => {
+  clearTimeout(chatSearchTimer);
+  chatSearchTimer = setTimeout(chatSearchRun, 200);
+});
+document.getElementById('chat-search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.shiftKey ? chatSearchNav(-1) : chatSearchNav(1); return; }
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    e.stopPropagation();
+    chatSearchClose();
+  }
+});
+
+// ── Open actions ───────────────────────────────────────────────────
+const openingSessionKeys = new Set();
+function syncOpenButtons() {
+  const activeOpening = !!activeSession && openingSessionKeys.has(sessionKey(activeSession));
+  document.getElementById('btn-open').disabled = activeOpening;
+  document.getElementById('open-btn').disabled = activeOpening;
+}
+async function doOpen(s) {
+  const sessionProvider = providerOf(s);
+  const key = sessionKey(s);
+  if (openingSessionKeys.has(key)) {
+    toast('该会话正在打开，请稍候', 'err');
+    return;
+  }
+  openingSessionKeys.add(key);
+  syncOpenButtons();
+  syncTerminalButtons();
+  try {
+    const result = await invoke('open_session', {
+      sessionId: s.session_id,
+      projectPath: s.project_path||'',
+      filePath: s.file_path,
+      provider: sessionProvider,
+      source: s.source || '',
+      title: s.title || ''
+    });
+    const openedToast = sessionProvider === 'codex'
+      ? '已用 codex resume 恢复会话'
+      : '已用 claude --dangerously-skip-permissions -r 恢复会话';
+    toast(result === 'focused' ? '会话正在运行，已切换到原 Terminal 标签页（未重复启动）' : openedToast, 'ok');
+  } catch(e) {
+    toast('打开失败: ' + String(e), 'err');
+  } finally {
+    openingSessionKeys.delete(key);
+    syncOpenButtons();
+    syncTerminalButtons();
+  }
+}
+let terminalOpening = false;
+function syncTerminalButtons() {
+  const selectedOpening = [...selectedIds].some(key => openingSessionKeys.has(key));
+  document.getElementById('btn-terminal').disabled = terminalOpening || selectedOpening;
+  document.getElementById('btn-open-favs').disabled = terminalOpening;
+  syncOpenButtons();
+}
+async function runTerminalBatch(sessions) {
+  const candidates = sessions.filter(s => !openingSessionKeys.has(sessionKey(s)));
+  if (!candidates.length) {
+    toast('所选会话已在打开流程中，未重复启动', 'ok');
+    return;
+  }
+  const keys = candidates.map(sessionKey);
+  keys.forEach(key => openingSessionKeys.add(key));
+  syncTerminalButtons();
+  try {
+    const result = await invoke('open_sessions_terminal', { sessions: candidates });
+    if (result.opened === 0) {
+      toast(`${result.already_running} 个会话均已在运行，保留原标签页，未重复启动`, 'ok');
+    } else if (result.already_running > 0) {
+      toast(`已在新窗口打开 ${result.opened} 个标签页；${result.already_running} 个运行中的会话保留在原处`, 'ok');
+    } else {
+      toast(`已在一个新 Terminal 窗口中打开 ${result.opened} 个顶部标签页`, 'ok');
+    }
+  } catch(e) {
+    toast('批量打开失败（不会自动关闭任何窗口）: ' + String(e), 'err');
+  } finally {
+    keys.forEach(key => openingSessionKeys.delete(key));
+    syncTerminalButtons();
+  }
+}
+
+async function doTerminal(sessions) {
+  if (terminalOpening) { toast('正在打开 Terminal 标签页，请稍候', 'err'); return; }
+  if (!sessions.length) { toast('没有可打开的会话', 'err'); return; }
+  terminalOpening = true;
+  syncTerminalButtons();
+  try {
+    await runTerminalBatch(sessions);
+  } finally {
+    terminalOpening = false;
+    syncTerminalButtons();
+  }
+}
+
+async function openAllFavorites() {
+  if (terminalOpening) { toast('正在打开 Terminal 标签页，请稍候', 'err'); return; }
+  terminalOpening = true;
+  syncTerminalButtons();
+  try {
+    const provider = currentProvider;
+    let favorites;
+    try {
+      const result = await invoke('get_favorite_sessions', { provider });
+      favorites = result
+        .map(s => normalizeSession(s, provider))
+        .filter(s => providerOf(s) === provider);
+    } catch(e) {
+      toast('读取收藏会话失败: ' + String(e), 'err');
+      return;
+    }
+    if (!favorites.length) {
+      toast(`当前 ${providerLabel(provider)} 还没有收藏会话`, 'err');
+      return;
+    }
+    await runTerminalBatch(favorites);
+  } finally {
+    terminalOpening = false;
+    syncTerminalButtons();
+  }
+}
+
+// ── Buttons ────────────────────────────────────────────────────────
+document.getElementById('btn-open').addEventListener('click', async () => {
+  if (!activeSession) { toast('请先选择一个会话', 'err'); return; }
+  await doOpen(activeSession);
+});
+document.getElementById('open-btn').addEventListener('click', async () => {
+  if (activeSession) await doOpen(activeSession);
+});
+document.getElementById('btn-terminal').addEventListener('click', async () => {
+  const selected = allSessions.filter(s => selectedIds.has(sessionKey(s)));
+  const toOpen = selected.length ? selected : (activeSession ? [activeSession] : []);
+  if (!toOpen.length) { toast('请先选择会话', 'err'); return; }
+  await doTerminal(toOpen);
+});
+document.getElementById('btn-open-favs').addEventListener('click', openAllFavorites);
+document.getElementById('btn-fav').addEventListener('click', async () => {
+  if (!activeSession) { toast('请先选择一个会话', 'err'); return; }
+  await doToggleFav(activeSession);
+});
+
+// Autostart — sync state on first click
+let autostartOn = false;
+function syncAutostartButton() {
+  const btn = document.getElementById('btn-autostart');
+  btn.style.color = '';
+  btn.classList.toggle('is-on', autostartOn);
+  btn.setAttribute('aria-pressed', String(autostartOn));
+  btn.title = autostartOn ? '登录后只自动打开本应用，不恢复 Terminal（点击关闭）' : '开启登录后自动打开本应用，不恢复 Terminal（点击开启）';
+}
+document.getElementById('btn-autostart').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-autostart');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  const desired = !autostartOn;
+  try {
+    const msg = await invoke(desired ? 'setup_autostart' : 'remove_autostart');
+    autostartOn = await invoke('get_autostart_status');
+    syncAutostartButton();
+    if (autostartOn !== desired) {
+      toast(`自启操作返回后，系统状态仍为${autostartOn ? '开启' : '关闭'}`, 'err');
+    } else {
+      toast(msg, 'ok');
+    }
+  } catch(e) {
+    try {
+      autostartOn = await invoke('get_autostart_status');
+      syncAutostartButton();
+    } catch (_) { /* retain the last confirmed state */ }
+    toast('自启设置失败: ' + String(e), 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// Refresh + select-all buttons in footer
+document.getElementById('btn-fav').insertAdjacentHTML('afterend',
+  '<button type="button" class="btn btn-outline-secondary" id="btn-refresh" title="刷新列表 (R)" aria-label="刷新当前会话列表">↻ 刷新</button>' +
+  '<button type="button" class="btn btn-outline-secondary" id="btn-selall" title="全选当前标签页 (' + modifierShortcut('A') + ')" aria-label="全选或取消全选当前列表" aria-pressed="false">⊠ 全选</button>');
+document.getElementById('btn-refresh').addEventListener('click', loadSessions);
+document.getElementById('btn-selall').addEventListener('click', () => {
+  const allVisible = filteredList.map(sessionKey);
+  const allSelected = allVisible.length > 0 && allVisible.every(id => selectedIds.has(id));
+  if (allSelected) {
+    allVisible.forEach(id => selectedIds.delete(id));
+  } else {
+    allVisible.forEach(id => selectedIds.add(id));
+  }
+  rerender();
+  updateStatus();
+});
+
+// ── Filter tabs ────────────────────────────────────────────────────
+document.querySelectorAll('.ftab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ftab').forEach(b => {
+      const selected = b === btn;
+      b.classList.toggle('active', selected);
+      b.setAttribute('aria-pressed', String(selected));
+    });
+    currentFilter = btn.dataset.filter;
+    // applyFilter computes the new visible set before pruning stale selections.
+    applyFilter();
+  });
+});
+
+// ── Sort ───────────────────────────────────────────────────────────
+document.getElementById('sort-btn').addEventListener('click', () => {
+  sortOrder = sortOrder === 'time' ? 'name' : 'time';
+  syncFilterControls();
+  applyFilter();
+});
+
+// ── Search ─────────────────────────────────────────────────────────
+let searchTimer;
+document.getElementById('search').addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(applyFilter, 150); // debounce 150ms
+});
+
+// ── Keyboard shortcuts ─────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  const tgt = document.activeElement;
+  const inSearch = tgt?.id === 'search';
+  const inInput = !!(tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable));
+
+  // ⌘A — select all visible
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a' && !inInput) {
+    e.preventDefault();
+    const allVisible = filteredList.map(sessionKey);
+    const allSelected = allVisible.every(id => selectedIds.has(id));
+    if (allSelected) allVisible.forEach(id => selectedIds.delete(id));
+    else allVisible.forEach(id => selectedIds.add(id));
+    rerender();
+    return;
+  }
+
+  // ⌘F / Ctrl+F — focus sidebar search
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
+    e.preventDefault();
+    document.getElementById('search').focus();
+    document.getElementById('search').select();
+    return;
+  }
+
+  // ⌘G / Ctrl+G — open chat in-session search
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'g') {
+    e.preventDefault();
+    if (activeSession) chatSearchOpen();
+    return;
+  }
+
+  // Escape — clear search or deselect all
+  if (e.key === 'Escape' && e.defaultPrevented) return;
+  if (e.key === 'Escape') {
+    if (inSearch) {
+      document.getElementById('search').value = '';
+      applyFilter();
+      document.getElementById('search').blur();
+    } else {
+      selectedIds.clear();
+      rerender();
+    }
+    return;
+  }
+
+  // R — refresh (not when in any input)
+  if (e.key === 'r' && !inInput && !e.metaKey) {
+    loadSessions(); return;
+  }
+
+  // Up/Down arrow navigation belongs only to the session list. Chat areas
+  // and focusable code blocks keep their native keyboard scrolling.
+  const inSessionList = !!tgt && document.getElementById('session-list').contains(tgt);
+  if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !inInput && inSessionList) {
+    e.preventDefault();
+    const items = [...document.querySelectorAll('.session-item')];
+    if (!items.length) return;
+    const cur = items.findIndex(el => el === document.activeElement);
+    const next = e.key === 'ArrowDown'
+      ? (cur < 0 ? 0 : Math.min(cur + 1, items.length - 1))
+      : (cur < 0 ? items.length - 1 : Math.max(cur - 1, 0));
+    items[next]?.focus();
+    return;
+  }
+});
+
+// ── Provider state, storage notes and session loading ───────────────
+function captureCurrentProvider() {
+  const state = providerStates[currentProvider];
+  state.allSessions = allSessions;
+  state.activeSession = activeSession;
+  state.selectedIds = selectedIds;
+  state.currentFilter = currentFilter;
+  state.sortOrder = sortOrder;
+  state.searchText = document.getElementById('search').value;
+  state.expandedProjects = expandedProjects;
+  state.chatMsgs = chatMsgs;
+  state.chatOffset = chatOffset;
+  state.chatTotal = chatTotal;
+  state.chatHasMore = chatHasMore;
+  state.chatTotalExact = chatTotalExact;
+  state.chatLoaded = chatLoaded;
+  state.chatSnapshotLen = chatSnapshotLen;
+  state.chatSnapshotToken = chatSnapshotToken;
+  // An in-flight load-more is invalidated by activationToken on switching.
+  chatLoadingMore = false;
+}
+
+function syncFilterControls() {
+  document.querySelectorAll('.ftab').forEach(btn => {
+    const selected = btn.dataset.filter === currentFilter;
+    btn.classList.toggle('active', selected);
+    btn.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
+  const sortBtn = document.getElementById('sort-btn');
+  sortBtn.textContent = sortOrder === 'time' ? '↓ 时间' : 'A 名称';
+  sortBtn.setAttribute('aria-label', sortOrder === 'time'
+    ? '当前按时间排序，点击切换为按名称排序'
+    : '当前按名称排序，点击切换为按时间排序');
+}
+
+function renderListState(kind, message) {
+  const listEl = document.getElementById('session-list');
+  document.getElementById('count-badge').textContent = kind === 'loading' ? '…' : '!';
+  listEl.setAttribute('aria-busy', String(kind === 'loading'));
+  if (kind === 'loading') {
+    listEl.innerHTML = `<div class="list-state" role="status">
+      <div class="spinner" aria-hidden="true"></div>
+      <div class="list-state-message">${esc(message)}</div>
+    </div>`;
+  } else {
+    listEl.innerHTML = `<div class="list-state error" role="alert">
+      <span class="list-state-icon" aria-hidden="true"><svg class="icon"><use href="#i-info"></use></svg></span>
+      <div class="list-state-message">${esc(message)}</div>
+      <button type="button" class="btn btn-outline-secondary" id="retry-load-btn">重新加载</button>
+    </div>`;
+    document.getElementById('retry-load-btn').addEventListener('click', loadSessions);
+  }
+}
+
+function updateStorageNote() {
+  const note = document.getElementById('storage-note');
+  const state = providerStates[currentProvider];
+  note.classList.remove('error');
+
+  if (currentProvider === 'codex') {
+    if (state.loaded) {
+      const total = state.allSessions.length;
+      const main = state.allSessions.filter(s => sessionKind(s) === 'main').length;
+      note.textContent = `${total} 线程 · ${main} 主会话 · ${total - main} 子线程`;
+      note.title = `Codex 本地线程：${total}，其中主会话 ${main}、子线程 ${total - main}`;
+    } else if (state.loading) {
+      note.textContent = 'Codex 线程统计加载中…';
+      note.title = '正在读取 Codex 本地线程';
+    } else {
+      note.textContent = 'Codex 线程统计暂不可用';
+      note.title = state.error || '尚未加载 Codex 线程';
+      note.classList.toggle('error', !!state.error);
+    }
+    return;
+  }
+
+  const stats = state.storageStats;
+  if (stats) {
+    const recoverable = Number(stats.recoverable) || 0;
+    const historyOnly = Number(stats.history_only) || 0;
+    const subagents = Number(stats.subagent_records) || 0;
+    const historyIds = Number(stats.history_ids) || 0;
+    note.textContent = `${recoverable} 可恢复 · ${historyOnly} 历史ID无文件 · ${subagents} 子记录`;
+    note.title = `Claude：${recoverable} 个有文件的可恢复会话；${historyOnly} 个历史 ID 没有会话文件，不可恢复；${subagents} 条子记录。历史 ID 总数 ${historyIds}。`;
+    if (state.storageError) {
+      note.textContent += ' · 更新失败';
+      note.title = `显示的是上次成功统计；本次更新失败：${state.storageError}`;
+      note.classList.add('error');
+    }
+  } else if (state.storageLoading) {
+    note.textContent = 'Claude 存储统计加载中…';
+    note.title = '正在区分可恢复会话、无文件历史 ID 和子记录';
+  } else {
+    note.textContent = 'Claude 存储统计暂不可用';
+    note.title = state.storageError || '尚未读取 Claude 存储统计';
+    note.classList.toggle('error', !!state.storageError);
+  }
+}
+
+async function loadClaudeStorageStats() {
+  const provider = 'claude';
+  const state = providerStates[provider];
+  if (state.storageLoading) {
+    state.storageRefreshQueued = true;
+    return;
+  }
+  const requestId = ++state.storageSeq;
+  state.storageLoading = true;
+  state.storageError = '';
+  if (currentProvider === provider) updateStorageNote();
+  try {
+    const stats = await invoke('get_claude_storage_stats');
+    if (requestId !== state.storageSeq) return;
+    state.storageStats = stats;
+  } catch(e) {
+    if (requestId !== state.storageSeq) return;
+    state.storageError = String(e);
+  } finally {
+    if (requestId === state.storageSeq) {
+      state.storageLoading = false;
+      if (currentProvider === provider) updateStorageNote();
+      if (state.storageRefreshQueued) {
+        state.storageRefreshQueued = false;
+        loadClaudeStorageStats();
+      }
+    }
+  }
+}
+
+async function switchProvider(provider) {
+  if (!providerStates[provider] || provider === currentProvider) return;
+  clearTimeout(searchTimer);
+  captureCurrentProvider();
+  ++activationToken; // invalidate detail and pagination requests from the previous provider
+  chatSearchClose();
+  hideCtxMenu();
+  ctxTarget = null;
+  currentProvider = provider;
+
+  const state = providerStates[provider];
+  allSessions = state.allSessions;
+  activeSession = state.activeSession;
+  selectedIds = state.selectedIds;
+  currentFilter = state.currentFilter;
+  sortOrder = state.sortOrder;
+  expandedProjects = state.expandedProjects;
+  chatMsgs = state.chatMsgs;
+  chatOffset = state.chatOffset;
+  chatTotal = state.chatTotal;
+  chatHasMore = state.chatHasMore;
+  chatTotalExact = state.chatTotalExact;
+  chatLoaded = state.chatLoaded;
+  chatSnapshotLen = state.chatSnapshotLen;
+  chatSnapshotToken = state.chatSnapshotToken || null;
+  chatLoadingMore = false;
+
+  document.getElementById('search').value = state.searchText;
+  document.querySelectorAll('.provider-tab').forEach(btn => {
+    const selected = btn.dataset.provider === provider;
+    btn.classList.toggle('active', selected);
+    btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+    btn.tabIndex = selected ? 0 : -1;
+    if (selected) document.getElementById('sidebar').setAttribute('aria-labelledby', btn.id);
+  });
+  syncFilterControls();
+  updateStorageNote();
+
+  if (state.loaded) {
+    applyFilter();
+    updateStatus();
+    if (state.loading) document.getElementById('status-bar').textContent = `正在刷新 ${providerLabel(provider)} 会话…`;
+    if (state.error) document.getElementById('status-bar').textContent = '上次刷新失败: ' + state.error.slice(0,60);
+  } else if (state.loading) {
+    renderListState('loading', `正在加载 ${providerLabel(provider)} 会话…`);
+    document.getElementById('status-bar').textContent = '加载中…';
+  } else if (state.error) {
+    renderListState('error', '加载失败: ' + state.error);
+    document.getElementById('status-bar').textContent = '加载失败: ' + state.error.slice(0,60);
+  }
+
+  if (activeSession) {
+    updateActiveSessionUI(activeSession);
+    if (chatLoaded) renderChat(false);
+    else await activateSession(activeSession, true);
+  } else {
+    clearActiveSessionUI();
+  }
+
+  if (!state.loaded && !state.loading) await loadSessions();
+  if (provider === 'claude' && !state.storageStats && !state.storageLoading) loadClaudeStorageStats();
+}
+
+document.querySelectorAll('.provider-tab').forEach(btn => {
+  btn.addEventListener('click', () => switchProvider(btn.dataset.provider));
+  btn.addEventListener('keydown', e => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const tabs = [...document.querySelectorAll('.provider-tab')];
+    const current = tabs.indexOf(btn);
+    const next = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1
+      : (current + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+    tabs[next].focus();
+    tabs[next].click();
+  });
+});
+
+async function loadSessions(options) {
+  const silent = !!(options && options.silent === true);
+  const provider = currentProvider;
+  const state = providerStates[provider];
+  const requestId = ++state.loadSeq;
+  const favoriteVersionAtStart = favoriteMutationVersion;
+  state.loading = true;
+  state.error = '';
+
+  if (provider === 'claude') loadClaudeStorageStats();
+  if (currentProvider === provider) {
+    document.getElementById('status-bar').textContent = state.loaded
+      ? `正在刷新 ${providerLabel(provider)} 会话…`
+      : `正在加载 ${providerLabel(provider)} 会话…`;
+    if (!state.loaded) renderListState('loading', `正在加载 ${providerLabel(provider)} 会话…`);
+    updateStorageNote();
+  }
+
+  try {
+    const result = await invoke('get_sessions', { provider });
+    if (requestId !== state.loadSeq) return;
+    const sessions = result.map(s => {
+      const normalized = normalizeSession(s, provider);
+      const override = favoriteOverrides.get(favoriteKey(normalized));
+      return override ? { ...normalized, favorited: override.value } : normalized;
+    });
+    // A request started after a confirmed toggle must have observed its stored
+    // result, so that override is no longer needed. Older snapshots retain it.
+    for (const [key, override] of favoriteOverrides) {
+      if (override.version <= favoriteVersionAtStart) favoriteOverrides.delete(key);
+    }
+    state.allSessions = sessions;
+    state.loaded = true;
+    state.error = '';
+    if (provider === 'codex') scheduleCodexMessageCounts(sessions);
+
+    const previousActive = currentProvider === provider ? activeSession : state.activeSession;
+    const updatedActive = previousActive
+      ? sessions.find(s => sameSessionIdentity(s, previousActive)) || null
+      : null;
+    state.activeSession = updatedActive;
+    if (previousActive && !updatedActive) {
+      state.chatMsgs = [];
+      state.chatOffset = 0;
+      state.chatTotal = 0;
+      state.chatHasMore = false;
+      state.chatTotalExact = false;
+      state.chatLoaded = false;
+      state.chatSnapshotLen = null;
+      state.chatSnapshotToken = null;
+      if (currentProvider === provider) {
+        ++activationToken;
+        chatMsgs = [];
+        chatOffset = 0;
+        chatTotal = 0;
+        chatHasMore = false;
+        chatTotalExact = false;
+        chatLoaded = false;
+        chatSnapshotLen = null;
+        chatSnapshotToken = null;
+        chatLoadingMore = false;
+      }
+    }
+
+    const previousSelection = currentProvider === provider ? selectedIds : state.selectedIds;
+    const validIds = new Set(sessions.map(sessionKey));
+    state.selectedIds = new Set([...previousSelection].filter(id => validIds.has(id)));
+
+    if (ctxTarget && providerOf(ctxTarget) === provider) {
+      const updatedTarget = sessions.find(s => sameSessionIdentity(s, ctxTarget));
+      if (updatedTarget) ctxTarget = updatedTarget;
+      else { ctxTarget = null; hideCtxMenu(); }
+    }
+
+    // A late response for a hidden provider updates only its own cached state.
+    if (currentProvider !== provider) return;
+    allSessions = sessions;
+    activeSession = state.activeSession;
+    selectedIds = state.selectedIds;
+    if (activeSession) updateActiveSessionUI(activeSession); // same backing file: metadata only
+    else clearActiveSessionUI();
+    applyFilter();
+    updateStatus();
+    syncTerminalButtons();
+    updateStorageNote();
+  } catch(e) {
+    if (requestId !== state.loadSeq) return;
+    state.error = String(e);
+    if (currentProvider !== provider) return;
+    document.getElementById('status-bar').textContent = '加载失败: ' + state.error.slice(0,60);
+    if (!state.loaded) renderListState('error', '加载失败: ' + state.error);
+    else if (!silent) toast('刷新失败，已保留当前列表: ' + state.error, 'err');
+    updateStorageNote();
+  } finally {
+    if (requestId === state.loadSeq) {
+      state.loading = false;
+      if (currentProvider === provider) updateStorageNote();
+    }
+  }
+}
+
+// ── GitHub update settings and notifications ───────────────────────
+let updateSettingsSnapshot = null;
+let latestUpdateResult = null;
+let updateCheckPromise = null;
+let updateCheckRepository = '';
+let updateModalReturnFocus = null;
+
+function setUpdateStatus(message, isError = false) {
+  const status = document.getElementById('update-status');
+  status.textContent = String(message || '');
+  status.classList.toggle('error', !!isError);
+}
+
+function hideUpdateBanner() {
+  document.getElementById('update-banner').hidden = true;
+}
+
+function syncUpdateButton() {
+  const button = document.getElementById('btn-update');
+  const hasUpdate = !!latestUpdateResult?.update_available;
+  button.classList.toggle('has-update', hasUpdate);
+  button.setAttribute('aria-label', hasUpdate
+    ? `发现新版本 ${latestUpdateResult.latest_version}，打开更新面板`
+    : '设置并检查 GitHub 新版本');
+  button.title = hasUpdate
+    ? `发现 ${latestUpdateResult.latest_version}（当前 ${latestUpdateResult.current_version}）`
+    : '检查 GitHub 新版本';
+}
+
+function applyUpdateSettings(settings, syncForm = false) {
+  updateSettingsSnapshot = settings;
+  document.getElementById('update-current-version').textContent = settings.current_version;
+  if (syncForm) {
+    document.getElementById('update-repository').value = settings.github_repository || '';
+    document.getElementById('update-auto-check').checked = settings.auto_check !== false;
+  }
+  syncUpdateButton();
+}
+
+async function loadUpdateSettings(syncForm = false) {
+  const settings = await invoke('get_update_settings');
+  applyUpdateSettings(settings, syncForm);
+  return settings;
+}
+
+function renderUpdateCheckResult(result, manual = false) {
+  if (result.update_available) {
+    document.getElementById('update-banner-title').textContent =
+      `发现新版本 ${result.latest_version}（当前 ${result.current_version}）`;
+    document.getElementById('update-banner-name').textContent =
+      `${result.release_name} · ${result.repository}`;
+    if (!result.dismissed || manual) document.getElementById('update-banner').hidden = false;
+    setUpdateStatus(result.dismissed
+      ? `新版本 ${result.latest_version} 已设为忽略；可重新打开发布页或等待下一版本。`
+      : `发现新版本 ${result.latest_version}。点击“查看发布页升级”下载适合你系统的产物。`);
+  } else {
+    hideUpdateBanner();
+    setUpdateStatus(`当前已是最新版本 ${result.current_version}；GitHub 最新稳定 Release 为 ${result.latest_version}。`);
+    if (manual) toast('当前已是最新版本', 'ok');
+  }
+  syncUpdateButton();
+}
+
+async function checkForUpdates(manual = false) {
+  let settings;
+  try {
+    settings = await loadUpdateSettings(false);
+  } catch (error) {
+    if (manual) {
+      setUpdateStatus('读取更新设置失败: ' + String(error), true);
+      toast('读取更新设置失败: ' + String(error), 'err');
+    }
+    return null;
+  }
+  const repository = settings.github_repository;
+  if (!repository) {
+    if (manual) setUpdateStatus('请先填写 GitHub 仓库（owner/repository）。', true);
+    return null;
+  }
+  if (updateCheckPromise) {
+    if (updateCheckRepository === repository) return updateCheckPromise;
+    if (!manual) return null;
+    await updateCheckPromise;
+    return checkForUpdates(manual);
+  }
+
+  const promise = (async () => {
+    try {
+      if (manual) setUpdateStatus(`正在检查 ${repository} 的最新稳定 Release…`);
+      document.getElementById('update-check-now').disabled = true;
+      const result = await invoke('check_for_updates');
+      // A response for a previously configured repository must not overwrite
+      // the panel or banner after the user has saved a different repository.
+      if (updateSettingsSnapshot?.github_repository !== result.repository) return null;
+      latestUpdateResult = result;
+      renderUpdateCheckResult(result, manual);
+      return result;
+    } catch (error) {
+      if (manual) {
+        setUpdateStatus('GitHub 更新检查失败: ' + String(error), true);
+        toast('GitHub 更新检查失败: ' + String(error), 'err');
+      } else if (!document.getElementById('update-modal').hidden) {
+        setUpdateStatus('后台更新检查失败；不影响会话管理。可稍后手动重试。' + String(error), true);
+      }
+      return null;
+    } finally {
+      document.getElementById('update-check-now').disabled = false;
+      if (updateCheckPromise === promise) {
+        updateCheckPromise = null;
+        updateCheckRepository = '';
+      }
+    }
+  })();
+  updateCheckPromise = promise;
+  updateCheckRepository = repository;
+  return promise;
+}
+
+async function saveUpdateSettingsFromForm(showConfirmation = false) {
+  const githubRepository = document.getElementById('update-repository').value;
+  const autoCheck = document.getElementById('update-auto-check').checked;
+  const settings = await invoke('save_update_settings', { githubRepository, autoCheck });
+  if (latestUpdateResult && latestUpdateResult.repository !== settings.github_repository) {
+    latestUpdateResult = null;
+    hideUpdateBanner();
+  }
+  applyUpdateSettings(settings, true);
+  setUpdateStatus(settings.github_repository
+    ? `已保存 ${settings.github_repository}；启动时自动检查为${settings.auto_check ? '开启' : '关闭'}。`
+    : '已清空仓库配置；不会发起 GitHub 更新检查。');
+  if (showConfirmation) toast('更新设置已保存', 'ok');
+  return settings;
+}
+
+async function openUpdateModal() {
+  updateModalReturnFocus = document.activeElement;
+  document.getElementById('update-modal').hidden = false;
+  setUpdateStatus('正在读取更新设置…');
+  try {
+    const settings = await loadUpdateSettings(true);
+    if (latestUpdateResult && latestUpdateResult.repository === settings.github_repository) {
+      renderUpdateCheckResult(latestUpdateResult, false);
+    } else {
+      setUpdateStatus(settings.github_repository
+        ? `仓库 ${settings.github_repository}；可以立即检查最新稳定 Release。`
+        : '填写 owner/repository 后即可检查。无仓库配置时不会发起网络请求。');
+    }
+  } catch (error) {
+    setUpdateStatus('读取更新设置失败: ' + String(error), true);
+  }
+  document.getElementById('update-repository').focus();
+}
+
+function closeUpdateModal() {
+  document.getElementById('update-modal').hidden = true;
+  if (updateModalReturnFocus?.isConnected) updateModalReturnFocus.focus();
+  updateModalReturnFocus = null;
+}
+
+document.getElementById('btn-update').addEventListener('click', openUpdateModal);
+document.getElementById('update-close').addEventListener('click', closeUpdateModal);
+document.getElementById('update-modal').addEventListener('click', event => {
+  if (event.target === event.currentTarget) closeUpdateModal();
+});
+document.getElementById('update-save').addEventListener('click', async () => {
+  try { await saveUpdateSettingsFromForm(true); }
+  catch (error) { setUpdateStatus('保存更新设置失败: ' + String(error), true); }
+});
+document.getElementById('update-check-now').addEventListener('click', async () => {
+  try {
+    await saveUpdateSettingsFromForm(false);
+    await checkForUpdates(true);
+  } catch (error) {
+    setUpdateStatus('保存或检查更新失败: ' + String(error), true);
+  }
+});
+document.getElementById('update-later').addEventListener('click', hideUpdateBanner);
+document.getElementById('update-open-release').addEventListener('click', async () => {
+  if (!latestUpdateResult?.release_url) return;
+  try {
+    await invoke('open_update_release', { releaseUrl: latestUpdateResult.release_url });
+  } catch (error) {
+    toast('打开发布页失败: ' + String(error), 'err');
+  }
+});
+document.getElementById('update-dismiss').addEventListener('click', async () => {
+  if (!latestUpdateResult?.latest_version) return;
+  try {
+    const settings = await invoke('dismiss_update', { version: latestUpdateResult.latest_version });
+    applyUpdateSettings(settings, false);
+    latestUpdateResult.dismissed = true;
+    hideUpdateBanner();
+    setUpdateStatus(`已忽略版本 ${latestUpdateResult.latest_version}；下一版本仍会提醒。`);
+  } catch (error) {
+    toast('忽略版本失败: ' + String(error), 'err');
+  }
+});
+document.getElementById('update-modal').addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeUpdateModal();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const focusable = [...document.querySelectorAll('#update-modal button:not(:disabled), #update-modal input:not(:disabled)')]
+    .filter(element => element.getClientRects().length > 0);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault(); last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault(); first.focus();
+  }
+});
+
+// ── Bootstrap ──────────────────────────────────────────────────────
+async function init() {
+  if (IS_WINDOWS) {
+    document.querySelectorAll('span').forEach(span => {
+      if (span.textContent.includes('⌘')) {
+        span.textContent = span.textContent
+          .replaceAll('⌘F', modifierShortcut('F'))
+          .replaceAll('⌘G', modifierShortcut('G'))
+          .replaceAll('⌘', MODIFIER_LABEL);
+      }
+    });
+    document.getElementById('chat-search-btn').title = `会话内搜索 (${modifierShortcut('G')})`;
+  }
+
+  // Sync autostart button with real system state
+  try {
+    autostartOn = await invoke('get_autostart_status');
+    syncAutostartButton();
+  } catch(_) {}
+
+  // Load only the local update settings before starting a non-blocking check.
+  // No repository means no GitHub request; background failures never interrupt sessions.
+  try {
+    const settings = await loadUpdateSettings(false);
+    if (settings.auto_check && settings.github_repository) checkForUpdates(false);
+  } catch (_) {}
+
+  await loadSessions();
+
+  setInterval(() => {
+    if (document.hidden || !updateSettingsSnapshot?.auto_check || !updateSettingsSnapshot.github_repository) return;
+    checkForUpdates(false);
+  }, 6 * 60 * 60 * 1000);
+
+  // Poll only the visible provider. Per-provider loading flags and request IDs
+  // prevent overlapping polls and late writes after a provider switch.
+  setInterval(() => {
+    const state = providerStates[currentProvider];
+    if (state.loading) return;
+    loadSessions({ silent: true });
+  }, 8000);
+}
+
+(function waitTauri(attempts) {
+  if (attempts > 200) {
+    document.getElementById('status-bar').textContent = 'Tauri IPC 未就绪';
+    return;
+  }
+  if (window.__TAURI__?.core?.invoke) {
+    invoke = window.__TAURI__.core.invoke;
+    init();
+  } else {
+    setTimeout(() => waitTauri(attempts + 1), 80);
+  }
+})(0);
+</script>
+</body>
+</html>
