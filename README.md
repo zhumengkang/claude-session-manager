@@ -136,6 +136,7 @@ codex --dangerously-bypass-approvals-and-sandbox resume <session-id>
 
 - macOS 更新：退出 App，完整替换 `/Applications` 中的应用包，再检查 strict codesign、CDHash 和授权。
 - Windows 更新：关闭旧管理器，运行已核验的新 NSIS，再核对 `%LOCALAPPDATA%` 中的实际安装文件。
+- 已有安装更新：看到升级横幅或手动检查后，按 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md#已有安装如何更新到新版本) 的步骤替换；仅源码发布、没有安装附件的版本无需更新。
 - 登录自启动只打开管理器，**不会自动批量恢复收藏或创建 Terminal**。
 - 卸载时可处理本应用自己的缓存、日志和自启动项；**不要删除整个 `~/.claude` 或 `~/.codex`**。
 - 收藏、导出和真实 CLI 会话数据应与管理器程序文件分开处理。

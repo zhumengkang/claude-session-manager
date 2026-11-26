@@ -8,6 +8,8 @@
 
 当前安装包版本：`0.1.0`（源码 main 为 `0.1.1`，仅版本号递增，没有新的安装包）；Bundle ID：`com.claude.sessionmanager`。
 
+已经安装过旧版本？不需要重读本页的首次安装步骤，直接按 [DEPLOYMENT.md · 已有安装如何更新到新版本](DEPLOYMENT.md#已有安装如何更新到新版本) 替换程序。
+
 | 平台 | 安装文件 | 当前验收状态 |
 | --- | --- | --- |
 | macOS Apple Silicon | `Claude Session Manager_0.1.0_aarch64.dmg` | `/Applications` 严格签名、DMG 和安装版合成恢复已有验收记录 |

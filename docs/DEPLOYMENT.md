@@ -25,6 +25,21 @@
 
 旧交付二进制不包含该新源码功能；只有构建、发布并安装包含该功能的新版本后，更新面板才会出现在实际安装版中。
 
+### 已有安装如何更新到新版本
+
+适用于已经安装管理器、看到“发现新版本”横幅，或想手动检查更新的情况。更新只替换程序文件，收藏、更新设置和会话数据保留在原位置。
+
+1. 点左下角“⇧ 更新”打开面板，点“保存并检查更新”。发现更高稳定版本时，右上角出现“发现新版本 x.y.z（当前 a.b.c）”。
+2. 点“查看发布页升级”打开 GitHub Release；暂时不处理可点“稍后提醒”，不想再收到该版本可点“忽略此版本”。
+3. 在发布页确认该版本提供了与你平台匹配的安装附件（macOS DMG、Windows NSIS）。**如果发布页没有安装附件（例如仅源码发布的 0.1.1），说明该版本不提供新安装包，保持当前安装即可，不需要更新。**
+4. 按平台替换程序：
+   - macOS：下载 DMG → 完全退出应用 → 挂载 DMG → 把完整 App 拖入 `/Applications` 并选择“替换”→ 按第 2 节校验并启动。
+   - Windows：下载 `Claude Session Manager_<版本>_arm64-setup.exe` → 关闭管理器窗口 → 以同一用户运行安装器（不需要管理员）→ 从开始菜单启动。
+5. 更新后打开“⇧ 更新”面板，确认“当前版本”已是新版本；若状态仍显示旧版本，说明启动的仍是旧文件，检查安装路径后重试。
+6. macOS 替换 App 后 ad hoc 签名会变化，实际恢复会话前需按 [重编译或替换 App 后权限失效](INSTALL.md#重编译或替换-app-后权限失效) 重新授予自动化 / 辅助功能权限。
+
+更新前建议保留一份可回滚的旧版本：macOS 备份整个旧 `.app`，Windows 保留旧版安装包。
+
 ## 2. macOS 更新
 
 1. 从新版本的明确发布页面或交付目录取得完整 DMG / `.app`，确认版本和 Apple Silicon 架构。
@@ -54,7 +69,7 @@
 
 ## 3. Windows 更新
 
-1. 确认新 `Claude Session Manager_0.1.0_arm64-setup.exe` 来自明确发布页面或交付目录，并适用于 Windows ARM64。
+1. 确认新 `Claude Session Manager_<版本>_arm64-setup.exe` 来自明确发布页面或交付目录，并适用于 Windows ARM64。
 2. 关闭旧管理器窗口；不要顺带结束真实 Codex daemon、Claude、Windows Terminal 或其他无关进程。
 3. 以安装旧版的同一 Windows 用户运行新 NSIS，不需要管理员 PowerShell。
 4. SmartScreen 出现提示时，按 [INSTALL.md](INSTALL.md) 的“SmartScreen 与发布者提示”逐项核对，不要关闭 SmartScreen 或添加 Defender 排除项。
