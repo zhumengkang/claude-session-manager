@@ -1160,19 +1160,19 @@ button { -webkit-tap-highlight-color: transparent; }
     <div class="update-dialog-header">
       <div>
         <h2 id="update-dialog-title">应用更新</h2>
-        <p id="update-dialog-description">当前版本 <strong id="update-current-version">—</strong>。检查公开 GitHub 仓库的最新稳定 Release；不会自动下载或替换应用。</p>
+        <p id="update-dialog-description">当前版本 <strong id="update-current-version">—</strong>。检查已内置的公开 GitHub 仓库的最新稳定 Release；不会自动下载或替换应用。</p>
       </div>
       <button type="button" class="btn btn-outline-secondary" id="update-close" aria-label="关闭更新面板">×</button>
     </div>
     <div class="update-form">
-      <label for="update-repository">GitHub 仓库（owner/repository）
-        <input id="update-repository" class="form-control" type="text" placeholder="例如：owner/claude-session-manager" autocomplete="off" spellcheck="false" maxlength="201">
+      <label for="update-repository">GitHub 仓库（已内置，可改为你的 fork）
+        <input id="update-repository" class="form-control" type="text" placeholder="zhumengkang/claude-session-manager" autocomplete="off" spellcheck="false" maxlength="201">
       </label>
       <label class="update-checkbox" for="update-auto-check">
         <input id="update-auto-check" type="checkbox">
         启动时自动检查；应用运行期间每 6 小时再检查一次
       </label>
-      <div id="update-status" role="status" aria-live="polite">填写仓库后即可检查。无仓库配置时不会发起网络请求。</div>
+      <div id="update-status" role="status" aria-live="polite">仓库地址已内置，可直接检查；不会发起无关网络请求。</div>
     </div>
     <div class="update-dialog-actions">
       <button type="button" class="btn btn-outline-secondary" id="update-save">保存设置</button>
@@ -2967,8 +2967,8 @@ async function openUpdateModal() {
       renderUpdateCheckResult(latestUpdateResult, false);
     } else {
       setUpdateStatus(settings.github_repository
-        ? `仓库 ${settings.github_repository}；可以立即检查最新稳定 Release。`
-        : '填写 owner/repository 后即可检查。无仓库配置时不会发起网络请求。');
+        ? `已内置仓库 ${settings.github_repository}；可以立即检查最新稳定 Release。`
+        : '未读取到内置仓库地址；可手动填写 owner/repository 后检查。');
     }
   } catch (error) {
     setUpdateStatus('读取更新设置失败: ' + String(error), true);

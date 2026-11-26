@@ -22,27 +22,19 @@
 
 > 当前实现是“检查、提醒并打开发布页”，**不会在后台自动下载、替换、安装或重启应用**。下载新产物后，按 [INSTALL.md](INSTALL.md) 和 [DEPLOYMENT.md](DEPLOYMENT.md) 完成核验与更新。
 
-## 2. 配置 GitHub 仓库
+## 2. GitHub 仓库
 
-1. 点击“更新”。
-2. 输入公开仓库的完整名称：
+应用已内置公开仓库：
 
-   ```text
-   owner/repository
-   ```
+```text
+zhumengkang/claude-session-manager
+```
 
-3. 按需勾选“启动时自动检查”。
-4. 点击“保存设置”，或直接点击“保存并检查更新”。
-
-只接受 `owner/repository`，不要粘贴 URL、令牌、Cookie 或其他凭据。仓库为空时不会发起 GitHub 更新请求。
-
-当前没有内置一个猜测的项目仓库地址。项目公开发布后，应在发布说明中告诉用户真实的仓库名称；不要把 `<OWNER>/<REPO>` 占位符原样填入。
-
-当前项目仓库为 `zhumengkang/claude-session-manager`。**Private 仓库阶段不支持当前实现的无凭据更新检查**：GitHub 公共 API 不会向未认证请求公开私有 Release，应用也不会要求或保存个人 Token。待所有者将仓库转为 Public 后，再在更新面板填写该仓库并进行同版本/高版本只读验收。
+打开“更新”面板会直接显示该地址，无需手动填写。使用 fork 或自建构建时，可以改成自己的 `owner/repository`；只接受 `owner/repository`，不要粘贴 URL、令牌、Cookie 或其他凭据。把输入清空并保存时会回退到内置仓库，不会关闭更新检查。
 
 ## 3. 自动与手动检查
 
-- 配置仓库且开启自动检查后，应用启动时发起一次检查。
+- 已内置仓库且开启自动检查后，应用启动时发起一次检查。
 - 应用持续运行时，每 6 小时再检查一次；窗口处于隐藏状态时跳过周期检查。
 - 点击“保存并检查更新”可以随时手动检查。
 - 同一仓库的并发点击共用一个进行中的请求。
@@ -109,7 +101,7 @@ https://api.github.com/repos/<owner>/<repository>/releases/latest
 
 | 状态 | 原因与处理 |
 | --- | --- |
-| 未找到公开仓库或稳定 Release | 检查 `owner/repository`，确认公开仓库已有非草稿、非预发布 Release |
+| 未找到公开仓库或稳定 Release | 确认内置仓库可公开访问，且已有非草稿、非预发布 Release；如改用 fork，检查 `owner/repository` 是否拼写正确 |
 | GitHub 限流或拒绝 | 稍后重试；不要在配置中加入 Token 或凭据 |
 | 标签不是语义化版本 | 将发布标签改为 `v1.2.3` / `1.2.3` 形式后重新发布 |
 | 网络超时 | 检查网络后手动重试；后台失败不影响会话功能 |

@@ -123,12 +123,12 @@ codex --dangerously-bypass-approvals-and-sandbox resume <session-id>
 
 ### 应用内 GitHub 更新提醒
 
-1. 点击左侧底部 **“⇧ 更新”**。
-2. 输入公开仓库 `owner/repository`，按需开启自动检查。
-3. 点击“保存并检查更新”。发现更高稳定 Release 时，顶部横幅提供“查看发布页升级”“忽略此版本”和“稍后提醒”。
+1. 点击左侧底部 **“⇧ 更新”**。面板已内置公开仓库 `zhumengkang/claude-session-manager`，无需手动填写。
+2. 按需开启自动检查，点击“保存并检查更新”。
+3. 发现更高稳定 Release 时，顶部横幅提供“查看发布页升级”“忽略此版本”和“稍后提醒”。
 4. 当前只检查、提醒并打开 GitHub 发布页，**不会自动下载、替换、安装或重启**。
 
-启动时自动检查和运行期间每 6 小时检查均可配置；无仓库时不发起请求。详见 **[docs/UPDATES.md](docs/UPDATES.md)**。
+启动时自动检查和运行期间每 6 小时检查均可配置。使用 fork 时可在面板改成自己的 `owner/repository`。详见 **[docs/UPDATES.md](docs/UPDATES.md)**。
 
 > 更新功能已加入当前源码并通过 Rust/前端 mock 检查；旧交付安装包不包含它，必须经新构建、新发布和安装后才能在实际安装版中使用。
 
@@ -255,7 +255,7 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
 ## 8. 验证状态与已知边界
 
-当前源码普通 Rust 测试为 **112 通过 / 0 失败 / 13 项显式 ignored**，严格 Clippy、完整前端 mock 与 **27 项审查回归**通过；更新面板和横幅已完成 mock 截图视觉复核。旧 macOS/Windows 安装版另有真实 Terminal、原生标签、安装/更新/卸载等历史验收记录，但这些结果不自动覆盖新增更新功能后的未来构建。
+当前源码普通 Rust 测试为 **113 通过 / 0 失败 / 13 项显式 ignored**，严格 Clippy、完整前端 mock 与 **27 项审查回归**通过；更新面板和横幅已完成 mock 截图视觉复核。旧 macOS/Windows 安装版另有真实 Terminal、原生标签、安装/更新/卸载等历史验收记录，但这些结果不自动覆盖新增更新功能后的未来构建。
 
 **仍需明确：**
 

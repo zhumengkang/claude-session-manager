@@ -10,6 +10,7 @@ use std::{
 };
 
 const UPDATE_SETTINGS_SCHEMA: u32 = 1;
+const DEFAULT_GITHUB_REPOSITORY: &str = "zhumengkang/claude-session-manager";
 const MAX_RELEASE_RESPONSE_BYTES: u64 = 1024 * 1024;
 static UPDATE_SETTINGS_LOCK: Mutex<()> = Mutex::new(());
 
@@ -26,7 +27,7 @@ impl Default for StoredUpdateSettings {
     fn default() -> Self {
         Self {
             schema: UPDATE_SETTINGS_SCHEMA,
-            github_repository: String::new(),
+            github_repository: DEFAULT_GITHUB_REPOSITORY.to_string(),
             auto_check: true,
             dismissed_version: None,
         }
@@ -152,7 +153,7 @@ fn load_settings_from(path: &Path) -> Result<StoredUpdateSettings, String> {
     if bytes.len() > 64 * 1024 {
         return Err("更新设置文件过大，未覆盖原文件".into());
     }
-    let stored: StoredUpdateSettings =
+    let mut stored: StoredUpdateSettings =
         serde_json::from_slice(&bytes).map_err(|error| format!("解析更新设置失败: {error}"))?;
     if stored.schema != UPDATE_SETTINGS_SCHEMA {
         return Err(format!("不支持的更新设置格式: {}", stored.schema));
@@ -163,6 +164,9 @@ fn load_settings_from(path: &Path) -> Result<StoredUpdateSettings, String> {
     }
     if let Some(version) = &stored.dismissed_version {
         Version::parse(version).map_err(|_| "更新设置中的忽略版本无效".to_string())?;
+    }
+    if stored.github_repository.is_empty() {
+        stored.github_repository = DEFAULT_GITHUB_REPOSITORY.to_string();
     }
     Ok(stored)
 }
@@ -191,6 +195,11 @@ pub(crate) fn save_update_settings(
     auto_check: bool,
 ) -> Result<UpdateSettings, String> {
     let repository = normalize_repository(&github_repository)?;
+    let repository = if repository.is_empty() {
+        DEFAULT_GITHUB_REPOSITORY.to_string()
+    } else {
+        repository
+    };
     let _guard = UPDATE_SETTINGS_LOCK
         .lock()
         .map_err(|_| "更新设置锁已失效".to_string())?;
@@ -367,6 +376,15 @@ mod tests {
             github_repository: "example-owner/session-manager".into(),
             ..StoredUpdateSettings::default()
         }
+    }
+
+    #[test]
+    fn missing_settings_default_to_the_embedded_repository() {
+        let directory = temporary_directory("default-repository");
+        let path = directory.join("update-settings.json");
+        let loaded = load_settings_from(&path).unwrap();
+        assert_eq!(loaded.github_repository, DEFAULT_GITHUB_REPOSITORY);
+        std::fs::remove_dir_all(directory).unwrap();
     }
 
     #[test]

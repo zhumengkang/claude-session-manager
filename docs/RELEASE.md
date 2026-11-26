@@ -107,7 +107,7 @@ Rust 应用应提交 `Cargo.lock` 固定构建依赖，不要按库项目习惯�
 4. 在仓库外构建并验证对应平台产物；附件由项目所有者以后在 GitHub Release 中单独上传，不进入 Git。
 5. 在 Release 说明中写明安装、授权、升级方式、安全提示和已知边界。
 6. 先以草稿核对内容，再发布为非预发布的 latest stable Release。
-7. 在已配置 `owner/repository` 的应用中手动检查：
+7. 在已安装应用（默认内置 `zhumengkang/claude-session-manager`）中手动检查：
    - 同版本安装不应显示升级横幅。
    - 旧版本安装应显示新版本横幅。
    - “查看发布页升级”必须打开该仓库对应 Release。

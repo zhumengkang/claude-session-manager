@@ -124,7 +124,7 @@ Restart Manager 只读查询 rollout 持有者，不调用 `RmShutdown` / `RmRes
           ▼
 update_checker.rs
           ├── 原子读写 update-settings.json
-          ├── owner/repository 严格校验
+          ├── 内置默认公开仓库 + owner/repository 严格校验
           ├── spawn_blocking 执行 GitHub HTTPS 请求
           ├── latest stable Release + semver 比较
           └── 校验当前仓库的发布页后交给系统浏览器
@@ -132,7 +132,7 @@ update_checker.rs
 
 请求边界：
 
-- 只接受公开 `owner/repository`，空仓库不联网。
+- 默认内置 `zhumengkang/claude-session-manager`；只接受公开 `owner/repository`，空值回退内置仓库后联网。
 - API 固定为 `https://api.github.com/repos/.../releases/latest`。
 - 连接超时 5 秒、总超时 12 秒、最多 3 次重定向、仅 HTTPS、响应最大 1 MiB。
 - 拒绝草稿、预发布、非语义化标签和外部发布地址。

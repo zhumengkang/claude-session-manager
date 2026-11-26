@@ -128,7 +128,7 @@ Windows 有两层检查：
 
 | 现象 | 检查与处理 |
 | --- | --- |
-| 点击检查提示先填写仓库 | 输入公开仓库 `owner/repository`，不要粘贴 URL 或凭据 |
+| 点击检查提示仓库无效 | 面板应预填 `zhumengkang/claude-session-manager`；如改过，恢复为 `owner/repository` 形式，不要粘贴 URL 或凭据 |
 | 返回 404 / 未找到稳定 Release | 确认仓库公开，已有非草稿、非预发布的 latest Release |
 | 标签不是语义化版本 | 使用 `v1.2.3` 或 `1.2.3`，不要使用只有日期或 `stable` 的标签 |
 | 已是最新版本 | Release 版本小于或等于当前运行版本，不显示升级横幅 |
