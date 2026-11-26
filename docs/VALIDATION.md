@@ -17,7 +17,7 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
 结果：
 
-- debug 与 `--release` 均为 **112 项通过，0 项失败，13 项显式 ignored**。
+- debug 与 `--release` 均为 **113 项通过，0 项失败，13 项显式 ignored**。
 - 严格 Clippy 退出码 0。
 - ignored 项不计入通过数；真实 Terminal、真实 CLI、真实大文件等 opt-in 测试没有随普通测试自动执行。
 
@@ -28,9 +28,10 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 - 草稿、预发布、外部 Release 地址拒绝。
 - 忽略版本不改变版本可用性。
 - 设置读写与损坏文件不被静默覆盖。
+- 缺失或空仓库设置回退到内置公开仓库。
 - GitHub API 地址固定到所选公开仓库。
 
-这些普通测试没有访问真实 GitHub。
+这些普通测试没有访问真实 GitHub。真实只读检查的记录见下方 Windows 构建与安装小节。
 
 ### Git 源码专用边界
 
@@ -99,19 +100,31 @@ src-tauri/target/release/bundle/dmg/Claude Session Manager_0.1.0_aarch64.dmg
 - 测试 App 仅按精确 PID/路径终止，独立确认进程消失；隔离临时目录已删除。现有安装版进程保留，LaunchAgent 仍不存在，未创建或关闭 Terminal。
 - 真实 GitHub 仓库、真实 App 更新面板和系统浏览器仍需后续验收。
 
+### 新 Windows 构建、安装与真实更新检查
+
+2026-11-26 从提交 `c625d3c` 在 Windows 11 ARM64 VM 实际执行：
+
+- `tauri build --bundles nsis` 退出码 0，构建用时约 39 秒。
+- NSIS 安装包 3,466,716 字节，独立 EXE 13,409,280 字节；两者 Authenticode 均为 `NotSigned`。
+- NSIS 以 `/S` 静默安装，退出码 0；实际安装文件为 `%LOCALAPPDATA%\Claude Session Manager\csm-app.exe`，大小 13,409,280 字节。
+- 安装后启动真实配置，左下角“⇧ 更新”可见；坐标点击打开更新面板，仓库输入框已预填 `zhumengkang/claude-session-manager`，没有手动输入。
+- 面板显示“当前已是最新版本 0.1.0；GitHub 最新稳定 Release 为 0.1.0”。该响应来自公开仓库 `v0.1.0` 的真实 latest Release，未下载或安装任何 Release 附件。
+- WebView2 的 UIA 树未向本次自动化暴露页面控件，因此按钮点击使用屏幕坐标；窗口归属已由截图核对。
+- 应用保持运行；未操作 Terminal，未执行卸载、升级或干净重装。
+
 ## 2. 当前更新功能尚未完成的验收
 
 以下不能由上述普通测试替代：
 
-- 真实公开 GitHub 仓库的同版本与更高版本只读响应。
+- 更高版本 Release 的真实升级横幅；当前只验证了同版本 `v0.1.0` 的真实响应。
 - 实际 GitHub 限流、代理、TLS、404 与非语义化标签的端到端表现。
-- 在 macOS / Windows 新 Release 中点击更新面板与系统浏览器。
+- 在 macOS 新构建中点击更新面板和打开系统浏览器。
 - macOS 新构建的安装、授权与完整真实 Terminal 回归。
-- Windows 新 NSIS 构建、安装、更新、卸载、WebView2 与原生 UIA 验收。
+- Windows NSIS 升级、卸载、干净重装、SmartScreen 与 WebView2 原生 UIA 控件验收。
 
 **旧 `verified` 交付目录和旧二进制保持不变，不能声称其中已经包含 GitHub 更新功能。** mock 中的高版本与仓库名都是合成数据。
 
-真实 GitHub 验收时只需读取公开 latest Release，不需要下载、安装新包，也不要编造项目仓库地址。
+真实 GitHub 验收只需读取公开 latest Release；本次未下载、安装或上传任何 Release 附件。
 
 ## 3. 既有真实 macOS 验收（历史构建）
 

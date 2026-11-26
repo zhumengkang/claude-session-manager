@@ -130,7 +130,7 @@ codex --dangerously-bypass-approvals-and-sandbox resume <session-id>
 
 启动时自动检查和运行期间每 6 小时检查均可配置。使用 fork 时可在面板改成自己的 `owner/repository`。详见 **[docs/UPDATES.md](docs/UPDATES.md)**。
 
-> 更新功能已加入当前源码并通过 Rust/前端 mock 检查；旧交付安装包不包含它，必须经新构建、新发布和安装后才能在实际安装版中使用。
+> 当前公开仓库已发布非草稿、非预发布的 `v0.1.0`。安装版已用内置仓库完成真实只读检查，面板显示“当前已是最新版本 0.1.0；GitHub 最新稳定 Release 为 0.1.0”。
 
 ### 平台部署与数据
 
