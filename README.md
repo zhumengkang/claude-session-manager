@@ -2,7 +2,7 @@
 
 一个基于 **Rust + Tauri 2** 的白色 GUI 本机会话管理器，用于集中浏览、搜索、收藏和恢复不同项目中的 **Claude Code** 与 **Codex** 会话。
 
-当前版本：`0.1.0` · Bundle ID：`com.claude.sessionmanager`
+源码版本：`0.1.1` · 最新安装包：`0.1.0` · Bundle ID：`com.claude.sessionmanager`
 
 <p align="center">
   <img src="src-tauri/icons/icon.svg" width="112" alt="Claude Session Manager 应用图标">
@@ -130,7 +130,7 @@ codex --dangerously-bypass-approvals-and-sandbox resume <session-id>
 
 启动时自动检查和运行期间每 6 小时检查均可配置。使用 fork 时可在面板改成自己的 `owner/repository`。详见 **[docs/UPDATES.md](docs/UPDATES.md)**。
 
-> 当前公开仓库已发布非草稿、非预发布的 `v0.1.0`。安装版已用内置仓库完成真实只读检查，面板显示“当前已是最新版本 0.1.0；GitHub 最新稳定 Release 为 0.1.0”。
+> 当前公开仓库已发布非草稿、非预发布的 `v0.1.1`（源码版，无安装附件）和 `v0.1.0`（安装验收记录版本）。安装版 0.1.0 用内置仓库完成真实只读检查时 latest 为 `v0.1.0`，面板显示同版本；现在 latest 为 `v0.1.1`，0.1.0 安装版检查时会显示升级横幅，可用于验证更高版本提醒。应用不会自动下载、替换或安装。
 
 ### 平台部署与数据
 

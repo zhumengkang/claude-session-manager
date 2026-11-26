@@ -6,7 +6,7 @@
 
 ## 1. 安装前确认
 
-当前版本：`0.1.0`；Bundle ID：`com.claude.sessionmanager`。
+当前安装包版本：`0.1.0`（源码 main 为 `0.1.1`，仅版本号递增，没有新的安装包）；Bundle ID：`com.claude.sessionmanager`。
 
 | 平台 | 安装文件 | 当前验收状态 |
 | --- | --- | --- |

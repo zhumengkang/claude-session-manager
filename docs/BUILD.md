@@ -10,7 +10,7 @@
 - 前端：`src/index.html` 静态 HTML/CSS/JavaScript，**没有前端打包步骤**。
 - UI 资源：本地 Tabler 1.4.0，不需要运行时 CDN。
 - Codex SQLite：`rusqlite` bundled SQLite，不需要外置 `sqlite3`。
-- 当前版本：`0.1.0`。
+- 源码版本：`0.1.1`；最新安装包：`0.1.0`（`0.1.1` 仅版本号递增，未重新出包）。
 - 当前 macOS 配置使用 ad hoc 签名；重新编译通常会改变 CDHash，旧 TCC 授权可能不再匹配。
 - 当前实际构建证据对应 macOS d、Windows e 和测试 f 输入。最新文档包只是文档刷新，**不等于重新编译这些二进制**。
 - 当前源码新增 `update_checker.rs`，使用 `reqwest` blocking + `native-tls` 读取公开 GitHub Release，`semver` 比较版本，`open` 打开已验证发布页。
