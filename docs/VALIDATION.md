@@ -198,7 +198,7 @@ src-tauri/target/release/bundle/dmg/Claude Session Manager_0.1.0_aarch64.dmg
 
 ## 8. CI 与发布状态
 
-`.github/workflows/source-only.yml` 与 `.github/workflows/windows-source-check.yml` 已定义，但没有实际运行记录或绿色 Actions URL。前者检查 Git 内容只允许源码及必要源码资源，后者只运行 Windows Rust 源码测试；二者均不上传构建附件。CI 即使未来通过，也不能替代真实 Terminal 的隔离 GUI 验收。
+2026-11-26 首轮源码导入已实际运行并通过：[source-only](https://github.com/zhumengkang/claude-session-manager/actions/runs/45785523418) 与 [windows-source-check](https://github.com/zhumengkang/claude-session-manager/actions/runs/45785521950) 均为 success。前者检查 Git 内容只允许源码及必要源码资源，后者完成 Windows 格式检查、普通 Rust 测试和严格 Clippy；二者均不上传构建附件。后续提交必须重新查看 Actions 状态，CI 通过也不能替代真实 Terminal 的隔离 GUI 验收。首轮 Windows 运行存在 `actions/checkout@v4` 的 Node.js 20 弃用提示，不影响该次 success 结论。
 
 本地 `scripts/check-source-only.sh`、pre-commit 与 pre-push 是额外边界，不代表 GitHub 远端已经执行。详见 [GitHub 源码专用仓库与附件隔离](GITHUB_SOURCE_ONLY.md)。
 

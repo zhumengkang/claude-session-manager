@@ -167,6 +167,6 @@ Windows：%LOCALAPPDATA%\com.claude.sessionmanager\session-metadata-v1.json
 - Windows 已运行会话会阻止重复，但不能聚焦原标签。
 - 当前没有 Developer ID / Apple 公证或 Authenticode 发布流程。
 - GitHub 更新仍需真实公开仓库的只读验收；mock 不能证明某个未来仓库配置正确。
-- CI 文件存在但未实际运行。
+- 首轮源码 CI 已通过，但后续提交仍需查看对应 Actions 结果，CI 不代替真实 GUI/Terminal 验收。
 - 项目自身 LICENSE 尚未补齐。
 - 任何测试通过都不等于“已经没有 bug”。

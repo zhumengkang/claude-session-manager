@@ -301,4 +301,4 @@ src-tauri/target/release/bundle/msi/
 
 Windows workflow **不再安装 Tauri CLI、不构建 NSIS、不上传 artifact**；仓库不使用 `actions/upload-artifact`，也不自动创建 Release。DMG、NSIS 等附件应在仓库外单独构建和验证，以后由项目所有者通过 GitHub Release 单独上传。完整规则见 [GitHub 源码专用仓库与附件隔离](GITHUB_SOURCE_ONLY.md)。
 
-**CI 文件已定义，但尚未实际运行，没有绿色结果或运行 URL。** CI 源码检查也不能代替真实 Windows Terminal 的隔离 GUI 验收。
+2026-11-26 首轮源码导入已实际运行并通过：[source-only](https://github.com/zhumengkang/claude-session-manager/actions/runs/45785523418) 与 [windows-source-check](https://github.com/zhumengkang/claude-session-manager/actions/runs/45785521950) 均为 success。后续提交状态以 GitHub Actions 页面为准；CI 源码检查不能代替真实 Windows Terminal 的隔离 GUI 验收，首轮 Windows 运行还记录了 `actions/checkout@v4` 的 Node.js 20 弃用提示，该提示不是测试失败。

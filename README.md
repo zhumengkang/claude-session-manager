@@ -277,7 +277,7 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 - Windows 已运行会话会阻止重复，但不能聚焦原标签。
 - GitHub 更新尚未用真实公开仓库做同版本/高版本只读验收；包含该功能的 macOS App/DMG 已构建并校验，但尚未安装，Windows 新构建尚未执行。
 - 当前没有 Developer ID / Apple 公证或 Authenticode 发布流程。
-- CI 文件存在但未实际运行。
+- 首轮 `source-only` 与 `windows-source-check` 已实际运行并通过；后续状态以 GitHub Actions 为准，CI 不代替真实 GUI/Terminal 验收。
 - 不能据现有测试声称“已经没有 bug”。
 
 当前测试数字、run ID、历史记录和证据边界见 **[docs/VALIDATION.md](docs/VALIDATION.md)**；产物身份以当次发布清单为准，运行测试见 **[smoke-tests/README.md](smoke-tests/README.md)**。
