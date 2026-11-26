@@ -2,7 +2,7 @@
 
 [文档中心](README.md) · 普通用户：[二进制安装与授权](INSTALL.md) · [使用指南](USAGE.md) · [GitHub 更新](UPDATES.md) · [部署文档](DEPLOYMENT.md) · [测试说明](../smoke-tests/README.md)
 
-> **只想使用应用时无需阅读本文。** 推荐直接使用已核验的 DMG 或 NSIS。本文面向需要修改源码、自行签名或重新发布的人。
+> **只想使用应用时无需阅读本文。** 直接使用已发布的 DMG 或 NSIS 即可。本文面向需要修改源码、自行签名或重新发布的人。
 
 ## 1. 构建前说明
 
@@ -35,7 +35,7 @@ cd <REPO>
 ### 1. 环境要求
 
 - macOS 与 Xcode Command Line Tools。
-- stable Rust，包含 `rustc`、`cargo`，推荐 rustup。
+- stable Rust，包含 `rustc`、`cargo`，使用 rustup 管理工具链。
 - Tauri CLI 2。
 - 运行和恢复测试需要系统 Terminal、Claude Code / Codex CLI。
 - **仅前端 mock 冒烟测试**额外需要 Node.js 和 Chrome；正常前端构建不需要 Node。
@@ -238,7 +238,7 @@ src-tauri/target/release/bundle/nsis/Claude Session Manager_<version>_<arch>-set
 src-tauri/target/release/bundle/nsis/Claude Session Manager_0.1.0_arm64-setup.exe
 ```
 
-NSIS 配置为 `installMode = currentUser`。安装与 SmartScreen 边界见 [INSTALL.md](INSTALL.md#windows-arm64安装-nsis推荐)。
+NSIS 配置为 `installMode = currentUser`。安装与 SmartScreen 边界见 [INSTALL.md](INSTALL.md#3-windows-11-arm64-安装与首次启动)。
 
 ### 3. MSI 与架构边界
 
@@ -282,11 +282,11 @@ src-tauri/target/release/bundle/msi/
 
 ## 4. 构建后交付检查
 
-1. 记录实际源码输入清单与 SHA-256。
-2. 记录 Release、DMG、NSIS 的大小、架构和 SHA-256。
-3. 从实际交付副本再次校验，而不只检查构建目录。
-4. macOS 检查 strict codesign、DMG 和当前 CDHash 的 TCC。
-5. Windows 分别核对独立 Release 与 NSIS 内层载荷，不混淆二者哈希。
+1. 记录实际源码输入、版本和构建环境。
+2. 记录 Release、DMG、NSIS 的文件名、大小和架构。
+3. 从实际交付副本再次检查文件完整性和安装行为，而不只检查构建目录。
+4. macOS 检查 strict codesign、DMG、Gatekeeper 首次启动和当前系统授权。
+5. Windows 分别核对独立 Release、NSIS 和最终安装路径，确认当前用户安装与 SmartScreen 提示。
 6. 更新/卸载/干净重装分别记录安装器退出码和独立状态证据。
 7. 普通测试、前端 mock 和真实 GUI 分开报告。
 8. 保留未覆盖项，不写“已经没有 bug”。

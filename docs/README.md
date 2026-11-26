@@ -2,17 +2,19 @@
 
 [返回项目首页](../README.md) · **[二进制安装与授权](INSTALL.md)** · [使用指南](USAGE.md) · [GitHub 更新](UPDATES.md) · [部署/更新/卸载](DEPLOYMENT.md) · [源码编译](BUILD.md)
 
-> 只想安装和使用：按 **安装与授权 → 使用指南** 阅读，不需要先安装 Rust，也不需要阅读编译文档。
+> 只想安装和使用：按 **安装与授权 → 使用指南** 阅读，不需要安装 Rust，也不需要阅读编译文档。
 
 ## 按任务快速定位
 
 | 我要做什么 | 直接打开 | 主要内容 |
 | --- | --- | --- |
-| 安装 macOS DMG | [INSTALL.md](INSTALL.md#macos安装-dmg推荐) | 校验、拖入 `/Applications`、首次启动 |
-| 安装 Windows ARM64 | [INSTALL.md](INSTALL.md#windows-arm64安装-nsis推荐) | 当前用户 NSIS 安装、WebView2、Windows Terminal |
-| 解决 macOS“不受信任/无法打开” | [INSTALL.md](INSTALL.md#macos首次启动gatekeeper-与签名) | ad hoc、Gatekeeper、完整性检查 |
-| 配置 Terminal 自动化和辅助功能 | [INSTALL.md](INSTALL.md#macos必须授予的两项权限) | Apple Events、Accessibility、重新启动 |
-| 重编译后权限开关仍在但恢复被拒绝 | [INSTALL.md](INSTALL.md#重编译或替换-app-后权限失效) | CDHash、csreq、定向重置与重新授权 |
+| 安装 macOS DMG | [INSTALL.md](INSTALL.md#2-macos-安装-dmg) | 完整 App、首次启动、Gatekeeper 与系统权限 |
+| 理解 macOS“仍要打开”与“信任开发者”的区别 | [INSTALL.md](INSTALL.md#22-当前签名与信任开发者的区别) | ad hoc、Developer ID、公证与证书信任边界 |
+| macOS 首次启动被拦截 | [INSTALL.md](INSTALL.md#23-首次启动完成单次-gatekeeper-确认) | 隐私与安全性、仍要打开、再次确认 |
+| 配置 Terminal 自动化和辅助功能 | [INSTALL.md](INSTALL.md#24-权限一terminal-自动化--apple-events) | Apple Events、Accessibility、文件夹访问与重开 App |
+| 替换 App 后权限失效 | [INSTALL.md](INSTALL.md#重编译或替换-app-后权限失效) | 移除旧条目、重新添加和定向权限处理 |
+| 安装 Windows ARM64 | [INSTALL.md](INSTALL.md#3-windows-11-arm64-安装与首次启动) | NSIS、WebView2、Windows Terminal 与同用户安装 |
+| 处理 Windows SmartScreen | [INSTALL.md](INSTALL.md#33-smartscreen-与发布者提示) | 未知发布者、单次运行确认与安全边界 |
 | 浏览、搜索、收藏和查看详情 | [USAGE.md](USAGE.md#1-浏览搜索与详情) | Provider、目录分组、反向分页、Markdown |
 | 打开一个会话 | [USAGE.md](USAGE.md#3-恢复单个会话) | 精确恢复命令、运行中保护 |
 | 一批会话在一个窗口多标签打开 | [USAGE.md](USAGE.md#4-批量恢复一个批次一个新窗口多个顶部标签) | 批次、去重、跨 Provider、新窗口规则 |
@@ -31,7 +33,7 @@
 | **配置 GitHub 源码专用仓库、隔离附件** | **[GITHUB_SOURCE_ONLY.md](GITHUB_SOURCE_ONLY.md)** | Git 根目录、忽略规则、hooks、CI 与手动 Release 边界 |
 | 运行测试 | [../smoke-tests/README.md](../smoke-tests/README.md) | 前端、Rust、真实 GUI 的边界与命令 |
 
-## 推荐阅读顺序
+## 阅读顺序
 
 ### 普通使用者
 
@@ -53,16 +55,16 @@
 ## 文档目录
 
 ```text
-csm-app/                          # 唯一的源码专用 Git 根目录
+csm-app/                          # 源码专用 Git 根目录
 ├── .gitignore / .gitattributes   # 附件排除与文本/二进制换行规则
 ├── .githooks/                    # 本地提交、推送前检查
 ├── .github/workflows/            # 源码检查，不上传构建附件
 ├── scripts/
 │   └── check-source-only.sh      # 暂存树 / HEAD 实际内容检查
-├── README.md                     # 首页：二进制安装、使用优先，编译在后
+├── README.md                     # 首页：安装、使用优先，编译在后
 ├── docs/
 │   ├── README.md                 # 本索引：按任务定位
-│   ├── INSTALL.md                # 二进制安装、macOS/Windows 授权
+│   ├── INSTALL.md                # macOS/Windows 安装、Gatekeeper、SmartScreen 与权限
 │   ├── USAGE.md                  # 浏览、详情、恢复、批量、导出
 │   ├── UPDATES.md                # GitHub 更新检查、横幅、忽略与发布页
 │   ├── DEPLOYMENT.md             # 更新、卸载、自启动、回滚、数据保留
@@ -83,11 +85,9 @@ csm-app/                          # 唯一的源码专用 Git 根目录
 
 ## 交付包中的文档位置
 
-如果你拿到的是 `Claude-Session-Manager-20261126-docs` 交付目录：
+如果拿到的是交付目录：
 
 1. 先读根目录 `README-交付说明.md`，了解产品文件与验收边界。
-2. 在 `Source/` 解压最新源码文档包，首页就是 `csm-app/README.md`。
-3. 按上表进入 `csm-app/docs/`。
-4. 产品哈希以交付根目录 `SHA256SUMS.txt` 为准；证据范围以 `manifest.json` 和 `delivery-verification.json` 为准。
-
-文档包与 d/e/f 实际构建输入分开保存。**文档更新不等于重新编译，也不会改变现有二进制哈希。**
+2. 打开 `Source/csm-app/README.md`，再按上表进入 `Source/csm-app/docs/`。
+3. 实际文件版本、架构和证据范围以当次 `manifest.json` 与交付记录为准。
+4. 文档更新不等于重新编译，也不会改变现有二进制。

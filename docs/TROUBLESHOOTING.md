@@ -74,11 +74,13 @@ codex resume --help
 
 这发生在 App 启动前，与 Terminal 自动化权限不同：
 
-- 先核对来源、当次发布清单和 strict codesign。
+- 确认文件来自项目所有者的 Release 或明确交付目录，并核对版本、架构和 strict codesign。
 - 当前是 ad hoc、未公证构建，严格完整性通过不等于 Gatekeeper 必然接受。
-- 哈希不一致、来源不明或提示已损坏时，不要运行。
-- 不要全局关闭 Gatekeeper、SIP 或 SmartScreen。
-- 正确处理与自行构建的边界见 [INSTALL.md](INSTALL.md#macos首次启动gatekeeper-与签名)。
+- 先正常启动一次，再检查“系统设置 → 隐私与安全性 → 安全性”是否出现本 App 的“仍要打开”。
+- 当前构建不需要在钥匙串中添加“信任开发者”或证书信任。
+- 来源不明、提示已损坏或签名结构验证失败时，不要运行。
+- 不要全局关闭 Gatekeeper、SIP 或 SmartScreen，不要添加不明证书。
+- 完整处理步骤见 [INSTALL.md](INSTALL.md#23-首次启动完成单次-gatekeeper-确认)。
 
 ## 5. 批量只看到部分标签或中途失败
 
@@ -161,7 +163,7 @@ Windows：%LOCALAPPDATA%\com.claude.sessionmanager\session-metadata-v1.json
 
 - 官方账号的完整 Claude/Codex TUI 历史与正文恢复未被合成 Provider 测试替代。
 - macOS 6.5 秒负向错误 toast 未完成视觉验收。
-- macOS 桌面/iCloud 副本存在 strict-codesign detritus；推荐从 `/Applications` 使用。
+- macOS 桌面/iCloud 副本存在 strict-codesign detritus；从 `/Applications` 使用。
 - macOS 恢复 IPC 仍为同步主线程路径，自动化期间可能阻塞 UI。
 - Windows x64、MSI、Explorer、自启动真实切换、原生标签聚焦和真实 `.ps1` Provider 完整恢复未覆盖。
 - Windows 已运行会话会阻止重复，但不能聚焦原标签。

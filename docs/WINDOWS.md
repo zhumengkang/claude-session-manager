@@ -1,6 +1,6 @@
 # Windows 实现与验收边界
 
-[文档中心](README.md) · [Windows 编译](BUILD.md#windows-构建) · [安装与授权](INSTALL.md#windows-arm64安装-nsis推荐) · [使用指南](USAGE.md) · [验证记录](VALIDATION.md)
+[文档中心](README.md) · [Windows 编译](BUILD.md#windows-构建) · [安装与授权](INSTALL.md#3-windows-11-arm64-安装与首次启动) · [使用指南](USAGE.md) · [验证记录](VALIDATION.md)
 
 > 当前已有 Windows 11 ARM64 的真实 Release、NSIS、WebView2 与原生 Terminal 隔离验收，但这不等于所有 Windows 架构、真实账号或最新更新功能均已完成验证。实现针对原生 Windows，不把 WSL 文件系统和进程混作原生 Windows 会话。
 
@@ -44,6 +44,21 @@ where.exe powershell
 claude --version
 codex --version
 ```
+
+### 首次安装与启动排查
+
+完整操作见 [INSTALL.md](INSTALL.md#3-windows-11-arm64-安装与首次启动)，常见症状按下表区分：
+
+| 症状 | 检查与处理 |
+| --- | --- |
+| 双击后没有窗口或 WebView 内容空白 | 从 Microsoft 官方页面安装匹配架构的 WebView2 Evergreen Runtime，完全退出并重开管理器 |
+| 提示找不到 `wt.exe` | 安装 Windows Terminal，并在“设置 → 应用 → 高级应用设置 → 应用执行别名”中启用 `wt.exe` |
+| SmartScreen 显示未知发布者 | 当前没有 Authenticode 签名；确认来源和文件名后，由用户决定是否进行“更多信息 → 仍要运行”的单次确认 |
+| 安装位置或会话目录属于其他用户 | 以安装旧版和登录 CLI 的同一用户运行，不使用管理员身份跨用户读取 |
+| Provider 列表为空 | 确认原生 Windows CLI 已登录，并检查 `%USERPROFILE%\.claude`、`%USERPROFILE%\.codex` 及自定义目录 |
+| `.ps1` 启动策略问题 | 不执行全局 `Set-ExecutionPolicy Unrestricted`；当前实现只使用本次进程的 `Process` 作用域，真实 `.ps1` 完整恢复仍未验收 |
+
+不要通过关闭 SmartScreen、Defender、防火墙或添加排除项处理安装问题。WebView2 与 Windows Terminal 的官方安装入口集中在 [INSTALL.md](INSTALL.md#31-检查运行组件)。
 
 应用内部不解析 `where.exe` 文本，而是直接遍历 PATH/PATHEXT 和用户安装目录，避免控制台代码页破坏 Unicode 路径。PATH 之外还会检查常见 Node、npm、Volta、Bun、Cargo、asdf、mise、pnpm、WinGet Links 等当前用户位置。
 
@@ -143,7 +158,7 @@ reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v ClaudeSessionM
 
 登录只启动管理器，不自动批量恢复收藏。自启动真实系统切换仍未验收。
 
-NSIS 为 `installMode = currentUser`，默认安装到 `%LOCALAPPDATA%\Claude Session Manager\csm-app.exe`。独立 Release、NSIS 内层载荷与最终安装文件应按当次交付证据分别核对，不假设它们总是同一个文件哈希。
+NSIS 为 `installMode = currentUser`，默认安装到 `%LOCALAPPDATA%\Claude Session Manager\csm-app.exe`。独立 Release、NSIS 内层载荷与最终安装文件应按实际路径、版本、架构和签名状态分别核对，不要只根据文件名或图标判断。
 
 当前没有 Authenticode 发布者签名。不要通过关闭 SmartScreen 解决来源不明问题。安装、更新、卸载与数据保留见 [DEPLOYMENT.md](DEPLOYMENT.md)。
 

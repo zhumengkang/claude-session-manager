@@ -28,7 +28,7 @@
 - 所有示例会话、消息、路径和 Session ID 都是模拟数据；Windows 图片使用随机 run ID 的合成夹具，没有读取真实 Claude/Codex 会话或认证信息。
 - Chrome mock 测试不打开 Terminal；Windows 隔离集成测试会创建并逐项清理自己的 Terminal 标签，但不操作已有标签。
 - PNG 能证明各自记录的渲染与结构，不能替代官方 CLI 的真实账号恢复验收。`terminal-tabs.svg` 仍只是结构示意图，真实验证记录见 `smoke-tests/README.md`。
-- Windows 图片来自对应历史构建的通过轮次，复制前已逐张人工查看；其具体文件身份以当次交付清单为准，不在持续维护文档中固定旧哈希。
+- Windows 图片来自对应历史构建的通过轮次，复制前已逐张人工查看；其具体版本、架构和证据范围以当次交付记录为准。
 
 ## 重新生成 Chrome 前端 PNG
 

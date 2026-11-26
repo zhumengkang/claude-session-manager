@@ -20,7 +20,10 @@ playwright-report/
 /deliverables/
 /release/
 /releases/
-/SHA256SUMS.txt
+/*sums.txt
+/*SUMS.txt
+/*checksums*.txt
+/*CHECKSUMS*.txt
 *.app/
 *.dSYM/
 *.xcarchive/

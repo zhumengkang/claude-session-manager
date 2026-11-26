@@ -85,7 +85,7 @@ while IFS= read -r -d '' path; do
   fi
 
   case "/$lower" in
-    */.gitmodules|*/favorites.json|*/update-settings.json|*/session-metadata-v1.json|*/state_5.sqlite|*/sha256sums.txt)
+    */.gitmodules|*/favorites.json|*/update-settings.json|*/session-metadata-v1.json|*/state_5.sqlite|*sums.txt|*checksums*.txt)
       reject "$relative" '子模块、本地运行数据或发布校验附件不在源码仓库允许范围内'
       continue
       ;;

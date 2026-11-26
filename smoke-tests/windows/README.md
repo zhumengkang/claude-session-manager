@@ -146,7 +146,7 @@ OWNED_PROVIDER_PROCESSES_REMAINING=0
 - 同 UUID 并发保护、三种负向保护和严格 owned 清理通过。
 - 合成截图逐张查看，0 JavaScript 异常、0 意外外部 HTTP 请求、0 模型提示。
 
-这些记录属于旧构建。具体 run ID 与证据范围见 [../../docs/VALIDATION.md](../../docs/VALIDATION.md)，产物身份以当次交付清单为准，不在持续维护文档中固定旧哈希。
+这些记录属于旧构建。具体 run ID 与证据范围见 [../../docs/VALIDATION.md](../../docs/VALIDATION.md)，产物版本、架构与安装状态以当次交付记录为准。
 
 ## 8. 明确未覆盖边界
 

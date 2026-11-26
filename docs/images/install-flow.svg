@@ -34,7 +34,7 @@
 
     <circle cx="862" cy="156" r="18" fill="#e0e7ff"/><text x="862" y="162" text-anchor="middle" font-size="16" font-weight="700" fill="#4f46e5">3</text>
     <text x="892" y="162" font-size="19" font-weight="700" fill="#0f172a">核对来源与完整性</text>
-    <text x="855" y="197" font-size="15" fill="#475569">SHA-256 · codesign --verify</text>
+    <text x="855" y="197" font-size="15" fill="#475569">codesign · Gatekeeper · 权限复核</text>
     <text x="855" y="224" font-size="14" fill="#64748b">当前 ad hoc，不等于 Developer ID / 公证</text>
 
     <circle cx="82" cy="351" r="18" fill="#d1fae5"/><text x="82" y="357" text-anchor="middle" font-size="16" font-weight="700" fill="#047857">4</text>

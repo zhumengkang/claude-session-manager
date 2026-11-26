@@ -2,7 +2,7 @@
 
 [项目首页](../README.md) · [文档中心](../docs/README.md) · [验证记录](../docs/VALIDATION.md) · [Windows 原生测试](windows/README.md)
 
-> 普通 Rust/前端测试与真实 Terminal/安装版验收是不同层级。本文不固定旧构建哈希；实际测试输入与产物身份以当次交付清单和证据为准。
+> 普通 Rust/前端测试与真实 Terminal/安装版验收是不同层级。实际测试输入、产物版本、架构和证据范围以当次交付记录为准。
 
 ## 1. 普通 Rust 测试与静态检查
 

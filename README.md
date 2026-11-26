@@ -17,7 +17,7 @@
 | 需求 | 文档 |
 | --- | --- |
 | **按任务查找全部文档** | **[docs/README.md](docs/README.md)** |
-| **二进制下载校验、安装、macOS/Windows 授权** | **[docs/INSTALL.md](docs/INSTALL.md)** |
+| **安装文件、macOS/Windows 首次启动与授权** | **[docs/INSTALL.md](docs/INSTALL.md)** |
 | 浏览、收藏、详情、单开、单窗多标签、导出 | **[docs/USAGE.md](docs/USAGE.md)** |
 | **GitHub 新版本检查、升级横幅与忽略版本** | **[docs/UPDATES.md](docs/UPDATES.md)** |
 | 更新、自启动、卸载、回滚、数据保留 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
@@ -31,64 +31,54 @@
 | 开源发布与许可证 | [docs/RELEASE.md](docs/RELEASE.md) |
 | **GitHub 只上传源码、附件隔离与提交前检查** | **[docs/GITHUB_SOURCE_ONLY.md](docs/GITHUB_SOURCE_ONLY.md)** |
 
-**推荐阅读顺序：** [二进制安装与授权](docs/INSTALL.md) → [使用指南](docs/USAGE.md) → 出现问题时查 [故障排查](docs/TROUBLESHOOTING.md)。开发者再阅读 [源码编译](docs/BUILD.md)。
+**阅读顺序：** [二进制安装与授权](docs/INSTALL.md) → [使用指南](docs/USAGE.md) → 出现问题时查 [故障排查](docs/TROUBLESHOOTING.md)。开发者再阅读 [源码编译](docs/BUILD.md)。
 
 ---
 
-## 1. 二进制安装与授权（推荐）
+## 1. 二进制安装与授权
 
 ### 选择安装包
 
-| 平台 | 推荐产物 | 当前验收范围 |
+| 平台 | 安装文件 | 当前验收范围 |
 | --- | --- | --- |
-| macOS Apple Silicon | `Claude Session Manager_0.1.0_aarch64.dmg` | `/Applications` 严格签名、DMG、当前 CDHash 授权及安装版合成恢复已验收 |
-| Windows 11 ARM64 | `Claude Session Manager_0.1.0_arm64-setup.exe` | 当前用户 NSIS 更新、卸载、干净重装和最终安装路径 GUI 已验收 |
+| macOS Apple Silicon | `Claude Session Manager_0.1.0_aarch64.dmg` | `/Applications` 严格签名、DMG 和安装版合成恢复已有验收记录 |
+| Windows 11 ARM64 | `Claude Session Manager_0.1.0_arm64-setup.exe` | 当前用户 NSIS 更新、卸载、干净重装和安装路径 GUI 已有验收记录 |
 
-安装前必须核对来源与 SHA-256：
+安装前确认文件来自项目所有者的 Release 或明确交付目录，并核对平台、架构、版本和文件名。不要运行来源不明的转载包、证书修复包或历史备份。
 
-```bash
-# macOS
-shasum -a 256 "/完整路径/Claude Session Manager_0.1.0_aarch64.dmg"
-```
-
-```powershell
-# Windows PowerShell
-Get-FileHash -Algorithm SHA256 ".\Claude Session Manager_0.1.0_arm64-setup.exe"
-```
-
-### macOS 最短安装路径
+### macOS 安装与首次授权
 
 1. 退出旧版，挂载 DMG。
-2. 将完整的 **Claude Session Manager.app** 拖入 `/Applications`。
-3. 从 `/Applications` 启动，不要只复制 App 内的 Unix 可执行文件。
-4. 当前是 ad hoc 签名、未公证；如遇 Gatekeeper 提示，先确认来源、哈希和 strict codesign，不要全局关闭安全功能。
-5. 首次恢复时允许：
+2. 将完整的 **Claude Session Manager.app** 拖入 `/Applications`，推出 DMG。
+3. 当前是 ad hoc 签名、未 Developer ID、未公证。首次启动如果被拦截，先尝试启动一次，再打开“系统设置 → 隐私与安全性 → 安全性”，确认对象后点击“仍要打开”，并在后续窗口确认“打开”。
+4. **当前构建不需要在钥匙串中“信任开发者”或添加证书信任。** 不要全局关闭 Gatekeeper、SIP 或 SmartScreen。
+5. 首次恢复时按实际提示允许：
    - **自动化 / Apple Events：Claude Session Manager → Terminal**。
    - **辅助功能 / Accessibility：Claude Session Manager 本身**。
-6. 授权后完全退出并重开 App。
+6. 项目位于桌面、文稿、下载或外置磁盘时，按需允许对应文件夹访问；不需要直接开启完全磁盘访问。
+7. 授权后完全退出并重开 App，再用可信测试会话验证。
 
 ```bash
 codesign --verify --deep --strict --verbose=2 \
   "/Applications/Claude Session Manager.app"
-open "/Applications/Claude Session Manager.app"
 ```
 
-重新编译或替换 App 后 CDHash 通常变化；系统开关仍打开不代表旧 TCC 记录已认可新二进制。详细授权和定向重置步骤见 [docs/INSTALL.md](docs/INSTALL.md#重编译或替换-app-后权限失效)。
+严格签名检查只证明应用包结构完整，不等于 Apple 已公证。替换构建后系统开关仍打开，不代表旧授权一定认可新副本。完整的 Gatekeeper、权限和重新授权步骤见 **[docs/INSTALL.md](docs/INSTALL.md)**。
 
-### Windows 最短安装路径
+### Windows 安装与首次启动
 
-1. 核验 NSIS 的 SHA-256。
-2. 关闭旧管理器，以安装旧版的同一 Windows 用户运行安装器。
-3. NSIS 使用当前用户安装，默认位置：
+1. 确认 WebView2 Runtime、Windows Terminal、`powershell.exe` 和相应 CLI 已在同一 Windows 用户环境中安装。
+2. 关闭旧管理器，以安装旧版的同一用户运行 NSIS，不需要管理员 PowerShell。
+3. 当前没有 Authenticode 发布者签名。SmartScreen 出现提示时，只有确认来源和文件名后，才由你决定是否点击“更多信息 → 仍要运行”；不要关闭 SmartScreen、Defender 或添加排除项。
+4. 从开始菜单启动，默认安装位置：
 
    ```text
    %LOCALAPPDATA%\Claude Session Manager\csm-app.exe
    ```
 
-4. 确认 WebView2 Runtime、Windows Terminal、`powershell.exe` 和相应 CLI 可用。
-5. 当前没有 Authenticode 发布者签名；不要通过关闭 SmartScreen 解决来源不明问题。
+5. 不要通过全局修改 PowerShell 执行策略解决安装问题，也不要为了读取其他用户会话而以管理员身份运行。
 
-完整安装、独立 Release、权限与首次验证见 **[docs/INSTALL.md](docs/INSTALL.md)**。
+完整安装、SmartScreen、独立可执行文件、权限与首次验证见 **[docs/INSTALL.md](docs/INSTALL.md)**。
 
 ---
 
