@@ -1,18 +1,63 @@
-# Claude Session Manager
-
-一个基于 **Rust + Tauri 2** 的白色 GUI 本机会话管理器，用于集中浏览、搜索、收藏和恢复不同项目中的 **Claude Code** 与 **Codex** 会话。
-
-源码版本：`0.1.1` · 最新安装包：`0.1.0` · Bundle ID：`com.claude.sessionmanager`
-
 <p align="center">
-  <img src="src-tauri/icons/icon.svg" width="112" alt="Claude Session Manager 应用图标">
+  <img src="src-tauri/icons/icon.svg" width="96" alt="Claude Session Manager 应用图标">
 </p>
 
-> **先安装使用，后看编译。** 普通用户只需要 DMG 或 Windows NSIS，不需要 Rust/Cargo。当前已验收产物为 macOS Apple Silicon 与 Windows 11 ARM64；其他架构不能据此宣称已支持。
->
-> **本目录是源码专用 Git 根目录。** 只允许提交源码、锁文件、测试、文档及必要源码资源；DMG、App、EXE、MSI、压缩包、构建产物和真实会话数据不得进入 Git。二进制附件由项目所有者以后单独上传到 GitHub Release，规则见 [GitHub 源码专用仓库与附件隔离](docs/GITHUB_SOURCE_ONLY.md)。
+<h1 align="center">Claude Session Manager</h1>
 
-## 文档快速定位
+<p align="center">
+  <b>Claude Code 与 Codex 的本地会话管理器</b><br>
+  把散落在各个项目里的历史会话收进一个干净、快速的白色桌面应用：<br>
+  统一浏览、搜索、收藏、查看完整消息、导出 Markdown，一键恢复，或在一个窗口里多标签批量打开。
+</p>
+
+<p align="center">
+  <img alt="平台：macOS Apple Silicon / Windows 11 ARM64" src="https://img.shields.io/badge/平台-macOS%20Apple%20Silicon%20%7C%20Windows%2011%20ARM64-2f6fed">
+  <img alt="技术栈：Rust + Tauri 2" src="https://img.shields.io/badge/技术栈-Rust%20%2B%20Tauri%202-24C8DB">
+  <img alt="源码版本：0.1.1" src="https://img.shields.io/badge/源码版本-0.1.1-informational">
+</p>
+
+<p align="center">
+  <img src="docs/images/csm-ui-claude.png" alt="Claude Session Manager 主界面：按项目分组浏览 Claude Code 与 Codex 会话，支持搜索、收藏、全选、详情与恢复">
+</p>
+
+## 这是什么
+
+**Claude Session Manager** 是一个用 **Rust + Tauri 2** 编写的本地桌面应用，用来管理 **Claude Code** 和 **Codex** 的会话历史。它自动扫描本机所有项目目录，把散落的会话集中到一个白色 GUI 里，让你不用记 Session ID、不用翻目录，就能找到、看懂并恢复任意一次对话。
+
+- **统一会话库**：Claude Code 与 Codex 双来源，按项目自动分组。
+- **找得到**：关键词搜索、时间 / 收藏过滤、全选与多选。
+- **看得清**：最新消息优先，向上加载更早历史，支持 Markdown、代码块与会话内搜索。
+- **带得走**：一键导出 Markdown，复制 Session ID、项目路径或文件路径。
+- **恢复快**：单会话直接打开；多个会话可在**一个新原生窗口里用多标签批量打开**。
+- **本地优先**：没有远程服务后端，UI 不加载运行时 CDN；除更新检查外不联网。
+- **有更新提醒**：内置公开仓库，发现更高稳定版本时显示横幅并打开发布页，不自动下载或安装。
+
+## 界面预览
+
+| 会话详情、Markdown 与代码块 | Codex 主会话与子线程 |
+| --- | --- |
+| ![Claude 会话详情：消息、元数据、Markdown 与代码块](docs/images/csm-ui-detail.png) | ![Codex 会话、子线程与消息计数](docs/images/csm-ui-codex.png) |
+
+| 多选与单窗多标签 | 新版本升级横幅 |
+| --- | --- |
+| ![多选会话并使用单窗多标签恢复](docs/images/csm-ui-selection.png) | ![发现更高稳定版本时的升级横幅](docs/images/csm-ui-update-banner.png) |
+
+> 截图由真实前端渲染，会话内容为模拟数据，不含任何真实会话或凭据。
+
+## 快速开始
+
+| 我想 | 去哪里 |
+| --- | --- |
+| 安装 macOS Apple Silicon 版 | [docs/INSTALL.md · macOS 安装 DMG](docs/INSTALL.md#2-macos-安装-dmg) |
+| 安装 Windows 11 ARM64 版 | [docs/INSTALL.md · Windows 安装](docs/INSTALL.md#3-windows-11-arm64-安装与首次启动) |
+| 更新已安装的旧版本 | [docs/DEPLOYMENT.md · 已有安装如何更新到新版本](docs/DEPLOYMENT.md#已有安装如何更新到新版本) |
+| 从源码编译 | [docs/BUILD.md](docs/BUILD.md) |
+
+> **安装包由作者在 [GitHub Releases](https://github.com/zhumengkang/claude-session-manager/releases) 页单独上传，本仓库只托管源码。** 发布页暂时没有 DMG / NSIS 时，说明该版本尚未上传二进制，可等待上传或按 [源码编译](docs/BUILD.md) 自行构建。当前已验收的安装版本为 `0.1.0`（macOS Apple Silicon、Windows 11 ARM64），源码 main 为 `0.1.1`。
+
+**GitHub 仓库边界：** 本目录是源码专用 Git 根目录，只允许提交源码、锁文件、测试、文档及必要源码资源；DMG、App、EXE、MSI、压缩包、构建产物和真实会话数据不得进入 Git。二进制附件只由项目所有者在 GitHub Release 单独上传，规则见 [GitHub 源码专用仓库与附件隔离](docs/GITHUB_SOURCE_ONLY.md)。
+
+## 文档导航
 
 | 需求 | 文档 |
 | --- | --- |
@@ -45,6 +90,8 @@
 | Windows 11 ARM64 | `Claude Session Manager_0.1.0_arm64-setup.exe` | 当前用户 NSIS 更新、卸载、干净重装和安装路径 GUI 已有验收记录 |
 
 安装前确认文件来自项目所有者的 Release 或明确交付目录，并核对平台、架构、版本和文件名。不要运行来源不明的转载包、证书修复包或历史备份。
+
+> GitHub Release 当前只包含自动生成的源码归档；DMG / NSIS 安装包由项目所有者单独上传。发布页暂时没有附件时，请等待上传或按 [源码编译](docs/BUILD.md) 自行构建，不要使用来源不明的转载包。
 
 ### macOS 安装与首次授权
 
@@ -266,7 +313,7 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 - macOS 恢复 IPC 仍为同步主线程路径。
 - Windows x64、MSI、Explorer、自启动真实切换、原生标签聚焦和真实 `.ps1` Provider 完整恢复未覆盖。
 - Windows 已运行会话会阻止重复，但不能聚焦原标签。
-- GitHub 更新尚未用真实公开仓库做同版本/高版本只读验收；包含该功能的 macOS App/DMG 已构建并校验，但尚未安装，Windows 新构建尚未执行。
+- GitHub 更新：已用真实公开仓库完成同版本只读检查；macOS 0.1.0 安装版已验证 `v0.1.1` 的升级横幅；Windows 横幅尚未验证（VM 网络受限时应用会显示检查失败）。
 - 当前没有 Developer ID / Apple 公证或 Authenticode 发布流程。
 - 首轮 `source-only` 与 `windows-source-check` 已实际运行并通过；后续状态以 GitHub Actions 为准，CI 不代替真实 GUI/Terminal 验收。
 - 不能据现有测试声称“已经没有 bug”。

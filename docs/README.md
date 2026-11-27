@@ -2,6 +2,8 @@
 
 [返回项目首页](../README.md) · **[二进制安装与授权](INSTALL.md)** · [使用指南](USAGE.md) · [GitHub 更新](UPDATES.md) · [部署/更新/卸载](DEPLOYMENT.md) · [源码编译](BUILD.md)
 
+> **Claude Session Manager** 是 Claude Code 与 Codex 的本地会话管理器：统一浏览、搜索、收藏、查看详情、导出 Markdown，并支持单会话与单窗多标签恢复。
+>
 > 只想安装和使用：按 **安装与授权 → 使用指南** 阅读，不需要安装 Rust，也不需要阅读编译文档。
 
 ## 按任务快速定位
