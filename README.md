@@ -42,7 +42,11 @@
 | --- | --- |
 | ![多选会话并使用单窗多标签恢复](docs/images/csm-ui-selection.png) | ![发现更高稳定版本时的升级横幅](docs/images/csm-ui-update-banner.png) |
 
-> 截图由真实前端渲染，会话内容为模拟数据，不含任何真实会话或凭据。
+| Windows 11 ARM64 实机界面 | Windows Terminal 单窗多标签 |
+| --- | --- |
+| ![Windows 11 ARM64 中真实 Release App 的白色界面与合成会话详情](docs/images/csm-windows-webview2.png) | ![一个原生窗口中的多个顶部标签](docs/images/csm-windows-terminal-tabs.png) |
+
+> 图片来自真实前端渲染或 Windows 实机 App，会话内容均为模拟或合成数据，不含真实会话、凭据或用户路径。
 
 ## 快速开始
 
