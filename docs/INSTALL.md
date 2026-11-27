@@ -26,6 +26,8 @@
 
 ![macOS 安装、权限与重编译授权流程](images/install-flow.svg)
 
+> **截图说明：** 下文安装截图来自真实安装窗口。Windows 向导截图取自 0.1.1 同版本维护流程；0.1.0 首次安装的页面和按钮相同，只有版本文字可能不同。安装路径中的用户名已打码。Gatekeeper 与 SmartScreen 的提示文字会随系统版本变化，本文不贴固定截图，按正文找到对应按钮即可。
+
 ## 1. 安装前确认
 
 当前安装包版本：`0.1.0`（源码 main 为 `0.1.1`，仅版本号递增，没有新的安装包）；Bundle ID：`com.claude.sessionmanager`。
@@ -85,6 +87,10 @@
    ```
 
    应输出一个目录，而不是“No such file or directory”。
+
+   DMG 窗口通常只有两个图标：左边的 `Applications` 和右边的 **Claude Session Manager**。把右边的 App 拖到左边的 `Applications` 上即可：
+
+   ![macOS 挂载 DMG 后，把 Claude Session Manager 拖到 Applications](images/install-macos-dmg.png)
 
 如果拿到的是完整 `.app`，同样复制整个应用包。不要只复制其中的 Unix 可执行文件，也不要运行历史备份里的 App。
 
@@ -273,15 +279,39 @@ tccutil reset AppleEvents com.claude.sessionmanager
 1. 从项目所有者的 Release 或明确交付目录取得 `Claude Session Manager_0.1.0_arm64-setup.exe`，放到“下载”文件夹。
 2. **关闭旧管理器窗口**。如果右下角通知区域还有旧版图标，也右键退出。不要顺带结束 Claude、Codex、Windows Terminal 或其他无关进程。
 3. 双击安装器。当前 NSIS 是 `currentUser` 安装，不需要管理员 PowerShell，也不要右键“以管理员身份运行”。
-4. 如果 SmartScreen 出现提示，按 [3.3](#33-smartscreen-与发布者提示) 核对后再继续。
-5. 安装向导一路点“下一步 / 安装”，完成后勾选或手动从开始菜单打开 **Claude Session Manager**。
-6. 默认安装位置：
+4. 如果 SmartScreen 出现提示，按 [3.3](#33-smartscreen-与发布者提示) 核对后再继续。通过后会出现欢迎页，点 **Next >**：
+
+   ![Windows NSIS 安装向导欢迎页](images/install-windows-setup-welcome.png)
+
+5. 如果这台机器已经装过**同一版本**，会先出现维护页。选择 **Add/Reinstall components**，再点 **Next >**；不要选 Uninstall。
+
+   ![Windows 同版本维护页：选择 Add/Reinstall components](images/install-windows-setup-maintenance.png)
+
+   > 如果提示 **“A newer version … is already installed”**，说明你拿旧安装包覆盖新版本。点 **Cancel** 退出，不要选择卸载；保持当前版本，或换用对应新版本的安装包。
+
+6. 在 **Choose Install Location** 页确认默认路径，直接点 **Next >**。通常不需要修改安装目录：
+
+   ![Windows 安装位置页，默认路径在 LOCALAPPDATA 下](images/install-windows-setup-location.png)
+
+   上图中的用户名已打码；实际路径会是 `C:\Users\<你的用户名>\AppData\Local\Claude Session Manager`。
+
+7. 等待绿色进度条走完，出现 **Installation Complete** 后点 **Next >**：
+
+   ![Windows 安装完成页，绿色进度条走完](images/install-windows-setup-complete.png)
+
+8. 在最后的完成页按需处理两个勾选项，再点 **Finish**：
+   - **Run Claude Session Manager**：勾选会立即启动；想手动从开始菜单启动就取消。
+   - **Create desktop shortcut**：是否创建桌面快捷方式，按你的习惯选择。
+
+   ![Windows 安装完成页：运行应用和创建桌面快捷方式](images/install-windows-setup-finish.png)
+
+9. 默认安装位置：
 
    ```text
    %LOCALAPPDATA%\Claude Session Manager\csm-app.exe
    ```
 
-7. 在 PowerShell 确认实际安装路径和文件信息：
+10. 在 PowerShell 确认实际安装路径和文件信息：
 
    ```powershell
    $app = "$env:LOCALAPPDATA\Claude Session Manager\csm-app.exe"
@@ -290,6 +320,8 @@ tccutil reset AppleEvents com.claude.sessionmanager
    ```
 
    应看到文件存在，`FileVersion` 为 `0.1.0`。如果提示“找不到路径”，说明安装到了别的用户目录，或安装器没有真正完成。
+
+11. 如果开始菜单打开的仍是旧版：先确认旧进程已退出，再重新运行新安装器；仍然不对时，检查快捷方式指向的路径是否为新安装位置。不要直接删除整个安装目录。
 
 具体用户目录由当前账户决定，不要写死其他机器的用户名，也不要为了读取另一个用户的会话而以管理员身份运行。
 
@@ -366,6 +398,11 @@ Windows 没有 macOS 的“自动化 / 辅助功能”授权步骤。正常运�
 按顺序做，任何一步失败都先看第 6 节，不要直接重装或删数据。
 
 1. **打开 App**：应看到白色主界面，顶部有 Claude / Codex 切换。
+
+   | macOS 打开后 | Windows 打开后 |
+   | --- | --- |
+   | ![macOS 安装版主界面](images/csm-macos-live-ui.png) | ![Windows 安装版主界面](images/csm-windows-live-ui.png) |
+
 2. **确认版本**：点左下角 **“⇧ 更新”**，面板应显示“当前版本 0.1.0”。如果显示“发现新版本 0.1.1”，是正常的：`v0.1.1` 只发布源码，没有新的安装包，保持当前 0.1.0 即可。
 3. **看列表**：左侧应出现“本地会话”和按项目分组的会话。列表为空时先看 [TROUBLESHOOTING.md](TROUBLESHOOTING.md)，不要清空 `~/.claude` 或 `~/.codex`。
 4. **看详情**：点一条会话，右侧应出现消息、元数据和“加载更早”。

@@ -19,6 +19,12 @@
 | `csm-macos-live-banner.png` | macOS 0.1.0 检查到 `v0.1.1` 的升级横幅 | 作者本机 macOS 安装版实机截图 |
 | `csm-windows-live-ui.png` | Windows 11 ARM64 安装版主界面与会话详情 | 作者本机 Windows 11 ARM64 安装版实机截图 |
 | `csm-windows-live-update.png` | Windows 安装版的更新面板与检查结果 | 作者本机 Windows 11 ARM64 安装版实机截图 |
+| `install-macos-dmg.png` | DMG 窗口：把 App 拖到 Applications，含红色箭头标注 | macOS 实机窗口截图 + 标注 |
+| `install-windows-setup-welcome.png` | Windows NSIS 安装向导欢迎页 | Windows 11 ARM64 实机安装窗口 |
+| `install-windows-setup-maintenance.png` | 已安装同版本时的维护页 | Windows 11 ARM64 实机安装窗口 |
+| `install-windows-setup-location.png` | 安装位置页，默认 LOCALAPPDATA 路径 | Windows 11 ARM64 实机安装窗口；用户名已打码 |
+| `install-windows-setup-complete.png` | 安装完成页，绿色进度条 | Windows 11 ARM64 实机安装窗口 |
+| `install-windows-setup-finish.png` | 完成页：运行应用与创建桌面快捷方式 | Windows 11 ARM64 实机安装窗口 |
 | `csm-windows-webview2.png` | Windows 白色 UI、205 条分页后的详情、Markdown 和代码块 | Windows 11 ARM64 真实 Release App + WebView2 + 合成夹具 |
 | `csm-windows-terminal-tabs.png` | Claude 收藏批开创建的 Windows Terminal 顶部两个标签 | 已验证自有 HWND 的 `PrintWindow` + 合成夹具 |
 | `csm-windows-codex-terminal-tab.png` | Claude 已运行后，Codex 首次批开在另一原生窗口创建的一个标签 | 已验证不同自有 HWND 的 `PrintWindow` + 合成夹具 |
@@ -30,6 +36,7 @@
 
 - 八张 `csm-ui-*.png` 由 `smoke-tests/frontend-smoke.mjs` 驱动真实 `src/index.html` 在 headless Chrome 中生成，使用模拟 IPC 和 `/mock/...` 路径。更新图片使用 `example-owner/session-manager` 与 `9.9.9` 合成高版本，不是真实 GitHub 发布证据。
 - 五张 `csm-macos-live-*.png` / `csm-windows-live-*.png` 是作者本机安装版的窗口截图，不是 mock。只包含会话标题、项目分组和版本号，不含消息正文、凭据或完整用户路径；更新面板与横幅中的仓库是项目公开仓库，版本号是对应发布时的真实 latest。
+- 六张 `install-*.png` 来自真实安装窗口。Windows 向导截图取自 0.1.1 同版本维护流程，0.1.0 首次安装的页面与按钮相同；`install-windows-setup-location.png` 中的用户名已打码。`install-macos-dmg.png` 的红色箭头是后加标注。
 - `csm-windows-webview2.png` 来自真实 Windows 11 ARM64 Release App 的 WebView2 CDP；两张 Terminal PNG 分别只对 UIA 已验证属于本次运行的 Claude/Codex Terminal HWND 调用 `PrintWindow`，不是全屏截图。
 - Chrome mock 与 Windows 隔离夹具图片中的会话、消息、路径和 Session ID 都是模拟数据；实机截图只显示本机会话标题。
 - 实机截图不在自动脚本中生成；界面或版本变化后应重新截取、逐张审阅，再替换本目录文件。
