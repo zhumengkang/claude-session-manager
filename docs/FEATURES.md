@@ -2,7 +2,7 @@
 
 [文档中心](README.md) · [安装与授权](INSTALL.md) · [使用指南](USAGE.md) · [GitHub 更新](UPDATES.md) · [验证记录](VALIDATION.md)
 
-> 以下 Chrome 前端图片使用模拟 IPC 与 `/mock/...` 路径；Windows 图片使用隔离合成夹具。示例不包含真实会话正文。截图证明对应记录的界面渲染，不等于所有平台或真实账号恢复均已验收。
+> 以下第 1–7 节为 Chrome 前端图片，使用模拟 IPC 与 `/mock/...` 路径；第 8–9 节为 Windows 隔离夹具与原生标签。`docs/images/` 另含作者本机 macOS / Windows 安装版实机截图（`csm-macos-live-*.png`、`csm-windows-live-*.png`），只显示会话标题，不含消息正文。示例截图证明对应记录的界面渲染，不等于所有平台或真实账号恢复均已验收。
 
 ## 1. Claude 会话管理
 

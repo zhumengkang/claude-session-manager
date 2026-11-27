@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/csm-ui-claude.png" alt="Claude Session Manager 主界面：按项目分组浏览 Claude Code 与 Codex 会话，支持搜索、收藏、全选、详情与恢复">
+  <img src="docs/images/csm-macos-live-ui.png" alt="Claude Session Manager 的 macOS 安装版主界面：按项目分组浏览 Claude Code 与 Codex 会话，支持搜索、收藏、全选、详情与恢复">
 </p>
 
 ## 这是什么
@@ -34,19 +34,19 @@
 
 ## 界面预览
 
+| macOS 实机：更新面板 | macOS 实机：发现新版本 |
+| --- | --- |
+| ![macOS 安装版的应用更新面板，内置 GitHub 仓库与版本检查](docs/images/csm-macos-live-update.png) | ![macOS 安装版显示发现新版本 0.1.1 的升级横幅](docs/images/csm-macos-live-banner.png) |
+
+| Windows 11 ARM64 实机界面 | Windows 实机：更新面板 |
+| --- | --- |
+| ![Windows 11 ARM64 安装版的白色会话管理界面](docs/images/csm-windows-live-ui.png) | ![Windows 安装版的更新面板与真实版本检查结果](docs/images/csm-windows-live-update.png) |
+
 | 会话详情、Markdown 与代码块 | Codex 主会话与子线程 |
 | --- | --- |
 | ![Claude 会话详情：消息、元数据、Markdown 与代码块](docs/images/csm-ui-detail.png) | ![Codex 会话、子线程与消息计数](docs/images/csm-ui-codex.png) |
 
-| 多选与单窗多标签 | 新版本升级横幅 |
-| --- | --- |
-| ![多选会话并使用单窗多标签恢复](docs/images/csm-ui-selection.png) | ![发现更高稳定版本时的升级横幅](docs/images/csm-ui-update-banner.png) |
-
-| Windows 11 ARM64 实机界面 | Windows Terminal 单窗多标签 |
-| --- | --- |
-| ![Windows 11 ARM64 中真实 Release App 的白色界面与合成会话详情](docs/images/csm-windows-webview2.png) | ![一个原生窗口中的多个顶部标签](docs/images/csm-windows-terminal-tabs.png) |
-
-> 图片来自真实前端渲染或 Windows 实机 App，会话内容均为模拟或合成数据，不含真实会话、凭据或用户路径。
+> 实机截图来自作者本机的 macOS / Windows 安装版，只显示会话标题，不含消息正文、凭据或完整路径；其余截图为前端渲染的演示数据。
 
 ## 快速开始
 
@@ -259,7 +259,7 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
 ![Windows 11 ARM64 中真实 Release App 的白色界面与合成会话详情](docs/images/csm-windows-webview2.png)
 
-更多 Claude/Codex、选择、右键菜单、最小宽度及 Terminal 截图见 **[docs/FEATURES.md](docs/FEATURES.md)**。图片中的会话均为模拟或合成数据，不是用户真实会话。
+更多 Claude/Codex、选择、右键菜单、最小宽度及 Terminal 截图见 **[docs/FEATURES.md](docs/FEATURES.md)**。图片包含作者本机实机截图与前端渲染图；实机截图只显示会话标题，不含消息正文、凭据或完整路径。
 
 ---
 
