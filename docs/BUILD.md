@@ -15,9 +15,220 @@
 - 当前实际构建证据对应 macOS d、Windows e 和测试 f 输入。最新文档包只是文档刷新，**不等于重新编译这些二进制**。
 - 当前源码新增 `update_checker.rs`，使用 `reqwest` blocking + `native-tls` 读取公开 GitHub Release，`semver` 比较版本，`open` 打开已验证发布页。
 - 更新请求连接超时 5 秒、总超时 12 秒、最多 3 次重定向、仅 HTTPS、响应最大 1 MiB，并通过 `spawn_blocking` 避免阻塞 GUI。
-- 加入更新功能后的 macOS App/DMG 已实际构建，strict codesign 与 `hdiutil verify` 通过；构建目录中的 App 已在隔离空数据环境启动并确认“更新”入口。它尚未覆盖 `/Applications`，真实 App 更新面板点击未完成。Windows 新构建尚未执行，旧二进制验收不能冒充该功能的安装版验收。
+- 加入更新功能后的 macOS App/DMG 与 Windows NSIS 均已实际构建、安装并完成真实只读更新检查；macOS 已验证 `v0.1.1` 升级横幅，Windows 横幅未验证。旧二进制验收不能冒充未来构建或未覆盖平台。
 
 更新功能、Release 标签和真实仓库验证边界见 [UPDATES.md](UPDATES.md)。
+
+## 0. 从零开始（第一次编译照着做）
+
+这一节假设你**从没装过 Rust 或 Tauri**。每一步都给出命令和“看到什么才算成功”。已经装好环境的开发者可以直接跳到后面的 macOS / Windows 详细章节。
+
+先选一台机器：
+
+| 你要的产物 | 必须在这台机器上构建 |
+| --- | --- |
+| macOS Apple Silicon 的 `.app` / `.dmg` | Apple Silicon Mac |
+| Windows 11 ARM64 的 NSIS `.exe` | Windows 11 ARM64 |
+| Windows x64 / macOS Intel / Universal | 当前没有已验收产物，相关命令只是候选路线 |
+
+首次构建需要联网下载 Rust 依赖和打包工具，并预留约 3–10 GB 磁盘空间。不要在网络不稳定时反复中断构建。
+
+### 0.1 macOS：从空白 Mac 到 DMG
+
+**准备**：macOS、Apple Silicon、当前用户能安装开发工具、约 30–60 分钟（首次构建）。
+
+#### 第 1 步：打开 Terminal
+
+按 `Command + 空格`，输入 `Terminal`，回车。后面所有命令都在这一个窗口里执行。
+
+#### 第 2 步：安装 Xcode Command Line Tools
+
+```bash
+xcode-select --install
+```
+
+弹出安装窗口后点“安装”，同意许可，等待完成。验证：
+
+```bash
+xcode-select -p
+```
+
+应输出类似 `/Library/Developer/CommandLineTools`。如果提示已经安装，也可以继续。
+
+#### 第 3 步：安装 Rust
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+看到安装选项时直接回车，使用默认安装。完成后让当前终端认识 `cargo`：
+
+```bash
+source "$HOME/.cargo/env"
+rustc --version
+cargo --version
+```
+
+两条命令都能打印版本号再继续。如果提示 `command not found: cargo`，关掉 Terminal 重开，或重新执行 `source "$HOME/.cargo/env"`。
+
+#### 第 4 步：安装 Tauri CLI 2
+
+```bash
+cargo install tauri-cli --version "^2.0.0" --locked
+```
+
+这一步会编译几分钟。完成后验证：
+
+```bash
+cargo tauri --version
+```
+
+应输出 `tauri-cli 2.x` 或类似版本。没有输出就回到上一条命令看报错。
+
+#### 第 5 步：取得源码
+
+```bash
+git clone https://github.com/zhumengkang/claude-session-manager.git
+cd claude-session-manager
+pwd
+ls
+```
+
+`pwd` 应显示你刚克隆的目录；`ls` 应能看到 `src`、`src-tauri`、`docs`、`smoke-tests`。如果提示 `git: command not found`，先完成第 2 步。
+
+#### 第 6 步：构建 App 和 DMG
+
+```bash
+cargo tauri build
+```
+
+第一次构建会下载依赖，时间明显更长。终端最后出现 `Finished`、`Bundling` 一类成功信息，并且命令提示符回到可输入状态，才算完成。不要在看到进度条时关闭窗口。
+
+#### 第 7 步：找到产物
+
+```bash
+open "src-tauri/target/release/bundle/dmg"
+open "src-tauri/target/release/bundle/macos"
+```
+
+应看到 `Claude Session Manager_0.1.1_aarch64.dmg` 和 `Claude Session Manager.app`。源码版本是 `0.1.1`，所以自己构建出来的文件名是 0.1.1；当前对外验收的安装包仍是 0.1.0。
+
+#### 第 8 步：检查并安装
+
+```bash
+codesign --verify --deep --strict --verbose=2 \
+  "src-tauri/target/release/bundle/macos/Claude Session Manager.app"
+
+hdiutil verify \
+  "src-tauri/target/release/bundle/dmg/Claude Session Manager_0.1.1_aarch64.dmg"
+```
+
+两条命令都没有报错后，按 [INSTALL.md · macOS 安装 DMG](INSTALL.md#2-macos-安装-dmg) 安装自己构建的 DMG。重新编译会改变 ad hoc 签名，首次恢复会话前要重新确认 Terminal 自动化和辅助功能权限。
+
+### 0.2 Windows 11 ARM64：从空白系统到 NSIS
+
+**准备**：Windows 11 ARM64、安装开发工具时可用管理员权限（运行应用本身不需要管理员）、约 8–10 GB 磁盘、约 30–90 分钟。
+
+#### 第 1 步：安装 Visual Studio Build Tools
+
+打开官方页面下载 **Visual Studio Build Tools 2022**：
+
+<https://visualstudio.microsoft.com/visual-cpp-build-tools/>
+
+运行安装器，在“工作负载”中勾选 **使用 C++ 的桌面开发 / Desktop development with C++**。在右侧“安装详细信息”中确认包含：
+
+- **MSVC v143 … ARM64/ARM64EC 生成工具**（ARM64 机器必须）。
+- **Windows 11 SDK**。
+- C++ 核心桌面功能。
+
+然后点“安装”，等待完成。只装 Rust 不装这一套，后面会在链接阶段报 `link.exe` 或 SDK 找不到。
+
+#### 第 2 步：安装 Rust
+
+打开 <https://rustup.rs>，下载并运行 `rustup-init.exe`，使用默认的 MSVC 工具链安装。完成后**关闭并重开 PowerShell**，验证：
+
+```powershell
+rustc --version
+cargo --version
+rustup show
+```
+
+`rustup show` 的 default host 应与机器架构一致；ARM64 机器通常是 `aarch64-pc-windows-msvc`。如果显示的是 `x86_64-pc-windows-msvc`，补装并切换：
+
+```powershell
+rustup toolchain install stable-aarch64-pc-windows-msvc
+rustup default stable-aarch64-pc-windows-msvc
+```
+
+#### 第 3 步：安装 Tauri CLI 2
+
+```powershell
+cargo install tauri-cli --version "^2.0.0" --locked
+cargo tauri --version
+```
+
+#### 第 4 步：确认运行组件
+
+```powershell
+where.exe wt
+where.exe powershell
+where.exe claude
+where.exe codex
+```
+
+缺少 Windows Terminal 或 WebView2 时按 [INSTALL.md · Windows 安装](INSTALL.md#3-windows-11-arm64-安装与首次启动) 的官方入口补齐。构建 NSIS 不需要先安装 Claude/Codex，但运行和恢复测试需要。
+
+#### 第 5 步：取得源码
+
+```powershell
+git clone https://github.com/zhumengkang/claude-session-manager.git
+cd claude-session-manager
+dir
+```
+
+没有 Git 时，可从 <https://git-scm.com/download/win> 安装，或在 PowerShell 执行：
+
+```powershell
+winget install --id Git.Git -e --source winget
+```
+
+安装后重开 PowerShell。
+
+#### 第 6 步：构建 NSIS
+
+```powershell
+cargo tauri build --bundles nsis
+```
+
+第一次构建会下载 Rust 依赖和 NSIS 打包工具，需要网络。成功时终端最后出现 `Finished`，命令提示符恢复。
+
+#### 第 7 步：找到安装包
+
+```powershell
+explorer "src-tauri\target\release\bundle\nsis"
+```
+
+应看到 `Claude Session Manager_0.1.1_arm64-setup.exe`。源码版本是 `0.1.1`；当前对外验收的安装包仍是 0.1.0。
+
+#### 第 8 步：安装并验证
+
+先退出旧版管理器，再双击新生成的 NSIS。SmartScreen 处理见 [INSTALL.md · SmartScreen](INSTALL.md#33-smartscreen-与发布者提示)。安装后用 PowerShell 核对：
+
+```powershell
+$app = "$env:LOCALAPPDATA\Claude Session Manager\csm-app.exe"
+(Get-Item $app).VersionInfo.FileVersion
+```
+
+应显示 `0.1.1`。如果仍是旧版，确认旧进程已退出，并检查开始菜单快捷方式指向的路径。
+
+### 0.3 构建完成后最少检查什么
+
+1. App 能启动，Claude / Codex 切换正常。
+2. 版本号与源码版本一致。
+3. 会话列表、详情、导出至少各点一次。
+4. 用一条已停止的可信测试会话验证单开。
+5. macOS 检查 `codesign` 和 `hdiutil verify`；Windows 检查 NSIS 退出码和安装后的 `FileVersion`。
+6. 真实恢复测试只操作本次创建的 Terminal 对象，不关闭已有终端。
 
 ## 2. 获取源码
 
@@ -109,7 +320,7 @@ src-tauri/target/release/bundle/dmg/Claude Session Manager_<version>_<arch>.dmg
 当前版本 Apple Silicon 示例：
 
 ```text
-src-tauri/target/release/bundle/dmg/Claude Session Manager_0.1.0_aarch64.dmg
+src-tauri/target/release/bundle/dmg/Claude Session Manager_0.1.1_aarch64.dmg
 ```
 
 构建后检查：
@@ -119,7 +330,7 @@ codesign --verify --deep --strict --verbose=2 \
   "src-tauri/target/release/bundle/macos/Claude Session Manager.app"
 
 hdiutil verify \
-  "src-tauri/target/release/bundle/dmg/Claude Session Manager_0.1.0_aarch64.dmg"
+  "src-tauri/target/release/bundle/dmg/Claude Session Manager_0.1.1_aarch64.dmg"
 ```
 
 安装、替换和授权按 [INSTALL.md](INSTALL.md) 执行。不要只复制 App 内的单个 Unix 可执行文件作为 macOS 分发包。
@@ -235,7 +446,7 @@ src-tauri/target/release/bundle/nsis/Claude Session Manager_<version>_<arch>-set
 当前 ARM64 示例：
 
 ```text
-src-tauri/target/release/bundle/nsis/Claude Session Manager_0.1.0_arm64-setup.exe
+src-tauri/target/release/bundle/nsis/Claude Session Manager_0.1.1_arm64-setup.exe
 ```
 
 NSIS 配置为 `installMode = currentUser`。安装与 SmartScreen 边界见 [INSTALL.md](INSTALL.md#3-windows-11-arm64-安装与首次启动)。
@@ -302,3 +513,19 @@ src-tauri/target/release/bundle/msi/
 Windows workflow **不再安装 Tauri CLI、不构建 NSIS、不上传 artifact**；仓库不使用 `actions/upload-artifact`，也不自动创建 Release。DMG、NSIS 等附件应在仓库外单独构建和验证，以后由项目所有者通过 GitHub Release 单独上传。完整规则见 [GitHub 源码专用仓库与附件隔离](GITHUB_SOURCE_ONLY.md)。
 
 2026-11-26 首轮源码导入已实际运行并通过：[source-only](https://github.com/zhumengkang/claude-session-manager/actions/runs/45785523418) 与 [windows-source-check](https://github.com/zhumengkang/claude-session-manager/actions/runs/45785521950) 均为 success。后续提交状态以 GitHub Actions 页面为准；CI 源码检查不能代替真实 Windows Terminal 的隔离 GUI 验收，首轮 Windows 运行还记录了 `actions/checkout@v4` 的 Node.js 20 弃用提示，该提示不是测试失败。
+
+## 6. 常见编译问题（照着查）
+
+| 报错或现象 | 原因 | 处理 |
+| --- | --- | --- |
+| `cargo: command not found` | 当前终端还没加载 Rust 环境 | 执行 `source "$HOME/.cargo/env"`，或关闭 Terminal 重开 |
+| `xcrun: error: invalid active developer path` | Xcode 命令行工具没装好或被移动 | 重新执行 `xcode-select --install`；仍失败时执行 `sudo xcode-select --switch /Library/Developer/CommandLineTools` |
+| `error: linking with 'cc' failed` / 找不到 macOS SDK | 命令行工具或许可不完整 | 安装 Xcode Command Line Tools；必要时执行 `sudo xcodebuild -license accept` 后再构建 |
+| `cargo tauri: no such command` | Tauri CLI 没装或 PATH 未更新 | 重跑 `cargo install tauri-cli --version "^2.0.0" --locked`；确认 `cargo tauri --version` |
+| Windows 报 `link.exe not found` | 没装 MSVC C++ 生成工具 | 回到 Visual Studio Build Tools，勾选“使用 C++ 的桌面开发”和 ARM64 生成工具，重开 PowerShell |
+| Windows 报 `could not find toolchain ... msvc` | Rust 装成了 GNU 工具链，或工具链不匹配架构 | 用 `rustup toolchain list` 查看实际名称，再 `rustup default <工具链名>` 切到 MSVC；x64 通常是 `stable-x86_64-pc-windows-msvc`，ARM64 通常是 `stable-aarch64-pc-windows-msvc` |
+| `libsqlite3-sys` / C 编译失败 | 缺 C 编译器或 Windows SDK | 安装 Visual Studio C++ 工作负载和 Windows SDK；只装 Rust 不够 |
+| 首次构建卡在下载 | 依赖、NSIS 或 Rust crate 需要联网 | 检查代理/DNS，稳定网络后重试；不要删除 `src-tauri` 源码 |
+| 构建成功但 App 打不开 | 运行组件缺失或安装不完整 | macOS 检查 `/Applications` 中的完整 `.app`；Windows 检查 WebView2 和安装路径 |
+| 重新构建后权限失效 | ad hoc 签名变化导致旧 TCC 不匹配 | 按 [INSTALL.md · 重编译或替换 App 后权限失效](INSTALL.md#重编译或替换-app-后权限失效) 重新授权 |
+| 构建目录很大 | `target/` 保存了全部依赖和产物 | 需要清理时执行 `cargo clean --manifest-path src-tauri/Cargo.toml`；不要删除源码或会话目录 |

@@ -10,6 +10,7 @@
 
 | 我要做什么 | 直接打开 | 主要内容 |
 | --- | --- | --- |
+| 第一次安装，照着做 | [INSTALL.md](INSTALL.md) | 路线选择、安装前检查、按平台逐步操作、验收清单与常见卡点 |
 | 安装 macOS DMG | [INSTALL.md](INSTALL.md#2-macos-安装-dmg) | 完整 App、首次启动、Gatekeeper 与系统权限 |
 | 理解 macOS“仍要打开”与“信任开发者”的区别 | [INSTALL.md](INSTALL.md#22-当前签名与信任开发者的区别) | ad hoc、Developer ID、公证与证书信任边界 |
 | macOS 首次启动被拦截 | [INSTALL.md](INSTALL.md#23-首次启动完成单次-gatekeeper-确认) | 隐私与安全性、仍要打开、再次确认 |
@@ -23,8 +24,8 @@
 | 导出、复制路径、显示文件 | [USAGE.md](USAGE.md#5-导出复制与文件管理器) | Markdown 快照、权限、路径操作 |
 | 检查 GitHub 新版本、忽略或重新查看 | [UPDATES.md](UPDATES.md) | 更新面板、自动检查、升级横幅、发布页 |
 | 更新、卸载、自启动或回滚 | [DEPLOYMENT.md](DEPLOYMENT.md) | 两平台部署生命周期与数据保留 |
-| 从源码编译 macOS App/DMG | [BUILD.md](BUILD.md#macos-构建) | 环境、命令、输出、签名和验证 |
-| 从源码编译 Windows NSIS | [BUILD.md](BUILD.md#windows-构建) | MSVC、Windows SDK、NSIS、输出 |
+| 从源码编译 macOS App/DMG | [BUILD.md](BUILD.md#macos-构建) | 从零环境、命令、输出、签名和验证 |
+| 从源码编译 Windows NSIS | [BUILD.md](BUILD.md#windows-构建) | 从零环境、MSVC、Windows SDK、NSIS、输出 |
 | 自定义 CLI、Node 或会话目录 | [CONFIGURATION.md](CONFIGURATION.md) | 自动发现、绝对路径覆盖、环境变量 |
 | 列表为空、只有 shell、权限报错 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | 按症状排查及当前限制 |
 | 查看功能截图 | [FEATURES.md](FEATURES.md) | 白色 UI、详情、选择、Windows Terminal |

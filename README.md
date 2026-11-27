@@ -52,10 +52,12 @@
 
 | 我想 | 去哪里 |
 | --- | --- |
+| 第一次安装，照着做 | [docs/INSTALL.md](docs/INSTALL.md)（含安装前检查、逐步骤操作和常见卡点） |
 | 安装 macOS Apple Silicon 版 | [docs/INSTALL.md · macOS 安装 DMG](docs/INSTALL.md#2-macos-安装-dmg) |
 | 安装 Windows 11 ARM64 版 | [docs/INSTALL.md · Windows 安装](docs/INSTALL.md#3-windows-11-arm64-安装与首次启动) |
+| 第一次从源码编译 | [docs/BUILD.md · 从零开始](docs/BUILD.md#0-从零开始第一次编译照着做) |
 | 更新已安装的旧版本 | [docs/DEPLOYMENT.md · 已有安装如何更新到新版本](docs/DEPLOYMENT.md#已有安装如何更新到新版本) |
-| 从源码编译 | [docs/BUILD.md](docs/BUILD.md) |
+| 从源码编译（环境已就绪） | [docs/BUILD.md](docs/BUILD.md) |
 
 > **安装包由作者在 [GitHub Releases](https://github.com/zhumengkang/claude-session-manager/releases) 页单独上传，本仓库只托管源码。** 发布页暂时没有 DMG / NSIS 时，说明该版本尚未上传二进制，可等待上传或按 [源码编译](docs/BUILD.md) 自行构建。当前已验收的安装版本为 `0.1.0`（macOS Apple Silicon、Windows 11 ARM64），源码 main 为 `0.1.1`。
 
