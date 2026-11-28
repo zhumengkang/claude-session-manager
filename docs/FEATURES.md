@@ -28,6 +28,9 @@
 
 每个非空批次创建一个新的原生 Terminal 窗口，窗口内包含所选数量的顶部标签。完全重复的批次不新增窗口；不相交的后续批次可继续创建新窗口。
 
+- 收藏保存在本机；电脑重启后点“打开收藏（单窗多标签）”可恢复当前 Provider 的全部收藏。
+- 也可勾选任意多条已停止会话，点“单窗多标签”只打开选中的这一批。
+
 ![一个 Terminal 原生窗口包含多个顶部标签](images/terminal-tabs.svg)
 
 上图是结构示意。macOS 的真实 AX 和 Windows UIA 验收边界见 [VALIDATION.md](VALIDATION.md)。
