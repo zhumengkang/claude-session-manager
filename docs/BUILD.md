@@ -10,12 +10,12 @@
 - 前端：`src/index.html` 静态 HTML/CSS/JavaScript，**没有前端打包步骤**。
 - UI 资源：本地 Tabler 1.4.0，不需要运行时 CDN。
 - Codex SQLite：`rusqlite` bundled SQLite，不需要外置 `sqlite3`。
-- 源码版本：`0.1.1`；最新安装包：`0.1.0`（`0.1.1` 仅版本号递增，未重新出包）。
+- 源码版本与当前安装版均为 `0.1.1`；`v0.1.1` Release 已提供 macOS DMG 与 Windows NSIS。
 - 当前 macOS 配置使用 ad hoc 签名；重新编译通常会改变 CDHash，旧 TCC 授权可能不再匹配。
 - 当前实际构建证据对应 macOS d、Windows e 和测试 f 输入。最新文档包只是文档刷新，**不等于重新编译这些二进制**。
 - 当前源码新增 `update_checker.rs`，使用 `reqwest` blocking + `native-tls` 读取公开 GitHub Release，`semver` 比较版本，`open` 打开已验证发布页。
 - 更新请求连接超时 5 秒、总超时 12 秒、最多 3 次重定向、仅 HTTPS、响应最大 1 MiB，并通过 `spawn_blocking` 避免阻塞 GUI。
-- 加入更新功能后的 macOS App/DMG 与 Windows NSIS 均已实际构建、安装并完成真实只读更新检查；macOS 已验证 `v0.1.1` 升级横幅，Windows 横幅未验证。旧二进制验收不能冒充未来构建或未覆盖平台。
+- 加入更新功能后的 macOS App/DMG 与 Windows NSIS 均已实际构建、安装并完成真实只读更新检查；macOS 0.1.0 安装版已验证 `v0.1.1` 升级横幅，Windows 0.1.0 安装版横幅未验证。旧二进制验收不能冒充未来构建或未覆盖平台。
 
 更新功能、Release 标签和真实仓库验证边界见 [UPDATES.md](UPDATES.md)。
 
@@ -111,7 +111,7 @@ open "src-tauri/target/release/bundle/dmg"
 open "src-tauri/target/release/bundle/macos"
 ```
 
-应看到 `Claude Session Manager_0.1.1_aarch64.dmg` 和 `Claude Session Manager.app`。源码版本是 `0.1.1`，所以自己构建出来的文件名是 0.1.1；当前对外验收的安装包仍是 0.1.0。
+应看到 `Claude Session Manager_0.1.1_aarch64.dmg` 和 `Claude Session Manager.app`。自己构建的版本号与 Release 的 0.1.1 安装版一致。
 
 #### 第 8 步：检查并安装
 
@@ -208,7 +208,7 @@ cargo tauri build --bundles nsis
 explorer "src-tauri\target\release\bundle\nsis"
 ```
 
-应看到 `Claude Session Manager_0.1.1_arm64-setup.exe`。源码版本是 `0.1.1`；当前对外验收的安装包仍是 0.1.0。
+应看到 `Claude Session Manager_0.1.1_arm64-setup.exe`。自己构建的版本号与 Release 的 0.1.1 安装版一致。
 
 #### 第 8 步：安装并验证
 

@@ -22,24 +22,28 @@
 - [ ] 旧版已经**完全退出**，不是只关了窗口。
 - [ ] 准备一条**专门用来测试、当前已停止**的会话；不要拿正在使用的重要会话试恢复。
 
-> **Release 页只有 `Source code` 压缩包时，说明该版本没有上传安装附件。** 不要把源码压缩包当成安装包，也不要从第三方转载站下载。可以等待附件上传，或按 [源码编译](BUILD.md) 自己构建；当前已验收的安装版本是 `0.1.0`。
+> **Release 页只有 `Source code` 压缩包时，说明该版本没有上传安装附件。** 不要把源码压缩包当成安装包，也不要从第三方转载站下载。当前 latest stable `v0.1.1` 已提供 macOS 与 Windows 安装附件；其他版本没有附件时，可等待上传或按 [源码编译](BUILD.md) 自己构建。
 
 ![macOS 安装、权限与重编译授权流程](images/install-flow.svg)
 
-> **截图说明：** 下文安装截图来自真实安装窗口。Windows 向导截图取自 0.1.1 同版本维护流程；0.1.0 首次安装的页面和按钮相同，只有版本文字可能不同。安装路径中的用户名已打码。Gatekeeper 与 SmartScreen 的提示文字会随系统版本变化，本文不贴固定截图，按正文找到对应按钮即可。
+> **截图说明：** 下文安装截图来自真实安装窗口。Windows 向导截图取自 0.1.1 同版本维护流程，与当前安装版一致；首次安装会跳过维护页，其余页面和按钮相同。安装路径中的用户名已打码。Gatekeeper 与 SmartScreen 的提示文字会随系统版本变化，本文不贴固定截图，按正文找到对应按钮即可。
 
 ## 1. 安装前确认
 
-当前安装包版本：`0.1.0`（源码 main 为 `0.1.1`，仅版本号递增，没有新的安装包）；Bundle ID：`com.claude.sessionmanager`。
+当前安装包版本：`0.1.1`，源码 main 与安装版一致；Bundle ID：`com.claude.sessionmanager`。
 
 已经安装过旧版本？不需要重读本页的首次安装步骤，直接按 [DEPLOYMENT.md · 已有安装如何更新到新版本](DEPLOYMENT.md#已有安装如何更新到新版本) 替换程序。
 
-| 平台 | 安装文件 | 当前验收状态 |
+| 平台 | 安装文件 | 当前核对状态 |
 | --- | --- | --- |
-| macOS Apple Silicon | `Claude Session Manager_0.1.0_aarch64.dmg` | `/Applications` 严格签名、DMG 和安装版合成恢复已有验收记录 |
+| macOS Apple Silicon | `Claude.Session.Manager_0.1.1_aarch64.dmg` | `v0.1.1` Release 提供；arm64、ad hoc 签名结构已核对 |
 | macOS Apple Silicon | 完整 `Claude Session Manager.app` | 必须保留整个 `.app`，不要只复制 `Contents/MacOS/csm-app` |
-| Windows 11 ARM64 | `Claude Session Manager_0.1.0_arm64-setup.exe` | 当前用户 NSIS 更新、卸载、干净重装及安装路径 GUI 已有验收记录 |
-| Windows 11 ARM64 | `csm-app-windows-arm64.exe` | 独立可执行文件，不含安装器和卸载器 |
+| Windows 11 ARM64 | `Claude.Session.Manager_0.1.1_arm64-setup.exe` | `v0.1.1` Release 提供；安装器与内置应用为 0.1.1 / ARM64 |
+| Windows 11 ARM64 | `csm-app.exe` | `v0.1.1` Release 提供；独立 0.1.1 / ARM64 可执行文件，不含安装器和卸载器 |
+
+直接下载：**[macOS Apple Silicon DMG](https://github.com/zhumengkang/claude-session-manager/releases/download/v0.1.1/Claude.Session.Manager_0.1.1_aarch64.dmg)** · **[Windows 11 ARM64 NSIS](https://github.com/zhumengkang/claude-session-manager/releases/download/v0.1.1/Claude.Session.Manager_0.1.1_arm64-setup.exe)** · **[Windows 11 ARM64 独立 EXE](https://github.com/zhumengkang/claude-session-manager/releases/download/v0.1.1/csm-app.exe)**
+
+> Release 附件文件名用点号分隔（`Claude.Session.Manager_...`）；自己从源码构建时默认文件名用空格（`Claude Session Manager_...`），版本和内容对应。
 
 当前没有已验收的 macOS Intel/Universal 或 Windows x64 安装包。不要把 ARM64 文件当作通用包。
 
@@ -74,7 +78,7 @@
 
 ### 2.1 放入应用程序目录
 
-1. 从 Release 或交付目录把 `Claude Session Manager_0.1.0_aarch64.dmg` 下载到“下载”文件夹。不要直接在 DMG 压缩包里双击 App。
+1. 从 Release 或交付目录把 `Claude.Session.Manager_0.1.1_aarch64.dmg` 下载到“下载”文件夹。不要直接在 DMG 压缩包里双击 App。
 2. 双击 DMG，等待 Finder 打开一个带 App 图标和 `Applications` 快捷方式的小窗口。
 3. **完全退出旧版**：如果旧版正在运行，按 `Command + Q`，确认菜单栏不再显示 Claude Session Manager。只点窗口左上角红点不算退出。
 4. 把 **Claude Session Manager.app** 图标拖到窗口里的 `Applications` 快捷方式上，松手。
@@ -276,7 +280,7 @@ tccutil reset AppleEvents com.claude.sessionmanager
 
 ### 3.2 使用 NSIS 安装
 
-1. 从项目所有者的 Release 或明确交付目录取得 `Claude Session Manager_0.1.0_arm64-setup.exe`，放到“下载”文件夹。
+1. 从项目所有者的 Release 或明确交付目录取得 `Claude.Session.Manager_0.1.1_arm64-setup.exe`，放到“下载”文件夹。
 2. **关闭旧管理器窗口**。如果右下角通知区域还有旧版图标，也右键退出。不要顺带结束 Claude、Codex、Windows Terminal 或其他无关进程。
 3. 双击安装器。当前 NSIS 是 `currentUser` 安装，不需要管理员 PowerShell，也不要右键“以管理员身份运行”。
 4. 如果 SmartScreen 出现提示，按 [3.3](#33-smartscreen-与发布者提示) 核对后再继续。通过后会出现欢迎页，点 **Next >**：
@@ -319,7 +323,7 @@ tccutil reset AppleEvents com.claude.sessionmanager
    (Get-Item $app).VersionInfo.FileVersion
    ```
 
-   应看到文件存在，`FileVersion` 为 `0.1.0`。如果提示“找不到路径”，说明安装到了别的用户目录，或安装器没有真正完成。
+   应看到文件存在，`FileVersion` 为 `0.1.1`。如果提示“找不到路径”，说明安装到了别的用户目录，或安装器没有真正完成。
 
 11. 如果开始菜单打开的仍是旧版：先确认旧进程已退出，再重新运行新安装器；仍然不对时，检查快捷方式指向的路径是否为新安装位置。不要直接删除整个安装目录。
 
@@ -403,7 +407,7 @@ Windows 没有 macOS 的“自动化 / 辅助功能”授权步骤。正常运�
    | --- | --- |
    | ![macOS 安装版主界面](images/csm-macos-live-ui.png) | ![Windows 安装版主界面](images/csm-windows-live-ui.png) |
 
-2. **确认版本**：点左下角 **“⇧ 更新”**，面板应显示“当前版本 0.1.0”。如果显示“发现新版本 0.1.1”，是正常的：`v0.1.1` 只发布源码，没有新的安装包，保持当前 0.1.0 即可。
+2. **确认版本**：点左下角 **“⇧ 更新”**，面板应显示“当前版本 0.1.1”。latest stable 也是 0.1.1，正常应显示“当前已是最新版本”。
 3. **看列表**：左侧应出现“本地会话”和按项目分组的会话。列表为空时先看 [TROUBLESHOOTING.md](TROUBLESHOOTING.md)，不要清空 `~/.claude` 或 `~/.codex`。
 4. **看详情**：点一条会话，右侧应出现消息、元数据和“加载更早”。
 5. **单开测试**：选一条**已停止**的可信测试会话，点“打开会话”。macOS 首次会弹 Terminal 自动化授权；Windows 应打开 Windows Terminal。
@@ -413,7 +417,7 @@ Windows 没有 macOS 的“自动化 / 辅助功能”授权步骤。正常运�
 ### 安装验收清单
 
 - [ ] App 能从开始菜单 / 启动台正常打开
-- [ ] 版本显示为 0.1.0
+- [ ] 版本显示为 0.1.1
 - [ ] Claude 和 Codex 至少一个列表有内容
 - [ ] 会话详情和 Markdown 能显示
 - [ ] 单条会话能恢复

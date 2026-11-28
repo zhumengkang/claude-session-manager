@@ -4,6 +4,21 @@
 
 > 本文区分“当前源码普通检查”“前端模拟 IPC”“历史真实二进制验收”和“仍未覆盖项”。测试数量、run ID 和性能只代表对应日期与输入；实际产物版本、架构与证据范围以当次发布清单和交付记录为准。
 
+## 0. 2026-11-28：仓库公开与 v0.1.1 安装附件核对
+
+仓库 `zhumengkang/claude-session-manager` 当前为 **Public**。项目所有者在 `v0.1.1` Release 上传了三份安装附件；本轮只读下载核对结果：
+
+| 附件 | 大小 | 核对结果 |
+| --- | --- | --- |
+| `Claude.Session.Manager_0.1.1_aarch64.dmg` | 6,064,625 字节 | 挂载后 App 的 `CFBundleShortVersionString` / `CFBundleVersion` 均为 `0.1.1`，Bundle ID 为 `com.claude.sessionmanager`，Mach-O 为 arm64；`codesign --verify --deep --strict` 通过，签名类型为 ad hoc |
+| `Claude.Session.Manager_0.1.1_arm64-setup.exe` | 3,627,112 字节 | `FileVersion` / `ProductVersion` 均为 `0.1.1`；解包后的 `csm-app.exe` 为 PE32+ Aarch64、`FileVersion` 为 `0.1.1` |
+| `csm-app.exe` | 13,889,024 字节 | PE32+ Aarch64、`FileVersion` 为 `0.1.1`；独立可执行文件，不含安装器和卸载器 |
+
+- 三个 Release 下载 URL 均返回 HTTP 200；附件上传者为 `zhumengkang`，上传时间为 2026-11-28。
+- NSIS 安装器外层是 32 位 NSIS 自解压程序，内部应用为 ARM64；不能按安装器外层 PE 架构判断应用架构。
+- 本轮没有重新安装或启动这三份附件，也没有重新执行 SmartScreen、Gatekeeper、升级、卸载或干净重装流程；以上只是版本、架构、签名结构和下载可访问性核对，不等于完整安装回归。
+- Release 附件不进入 Git；源码仓库仍通过 `source-only` 检查。
+
 ## 1. 当前源码：2026-11-26
 
 ### Rust 与静态检查
@@ -116,15 +131,15 @@ src-tauri/target/release/bundle/dmg/Claude Session Manager_0.1.0_aarch64.dmg
 
 以下不能由上述普通测试替代：
 
-- 更高版本 Release 的真实升级横幅；当前只验证了同版本 `v0.1.0` 的真实响应。
+- Windows 更高版本 Release 的真实升级横幅；macOS 0.1.0 安装版已验证 `v0.1.1` 横幅，Windows 0.1.0 安装版未验证。
 - 实际 GitHub 限流、代理、TLS、404 与非语义化标签的端到端表现。
-- 在 macOS 新构建中点击更新面板和打开系统浏览器。
+- 在 macOS 新构建中通过系统浏览器打开发布页；更新面板点击已用真实窗口截图核对。
 - macOS 新构建的安装、授权与完整真实 Terminal 回归。
 - Windows NSIS 升级、卸载、干净重装、SmartScreen 与 WebView2 原生 UIA 控件验收。
 
 **旧 `verified` 交付目录和旧二进制保持不变，不能声称其中已经包含 GitHub 更新功能。** mock 中的高版本与仓库名都是合成数据。
 
-真实 GitHub 验收只需读取公开 latest Release；本次未下载、安装或上传任何 Release 附件。
+2026-11-26 的真实检查未下载、安装或上传任何 Release 附件；2026-11-28 的附件核对见第 0 节。
 
 ## 3. 既有真实 macOS 验收（历史构建）
 

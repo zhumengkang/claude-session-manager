@@ -36,7 +36,7 @@
 
 - 八张 `csm-ui-*.png` 由 `smoke-tests/frontend-smoke.mjs` 驱动真实 `src/index.html` 在 headless Chrome 中生成，使用模拟 IPC 和 `/mock/...` 路径。更新图片使用 `example-owner/session-manager` 与 `9.9.9` 合成高版本，不是真实 GitHub 发布证据。
 - 五张 `csm-macos-live-*.png` / `csm-windows-live-*.png` 是作者本机安装版的窗口截图，不是 mock。只包含会话标题、项目分组和版本号，不含消息正文、凭据或完整用户路径；更新面板与横幅中的仓库是项目公开仓库，版本号是对应发布时的真实 latest。
-- 六张 `install-*.png` 来自真实安装窗口。Windows 向导截图取自 0.1.1 同版本维护流程，0.1.0 首次安装的页面与按钮相同；`install-windows-setup-location.png` 中的用户名已打码。`install-macos-dmg.png` 的红色箭头是后加标注。
+- 六张 `install-*.png` 来自真实安装窗口。Windows 向导截图取自 0.1.1 同版本维护流程；首次安装会跳过维护页，其余页面与按钮相同。`install-windows-setup-location.png` 中的用户名已打码。`install-macos-dmg.png` 的红色箭头是后加标注。
 - `csm-windows-webview2.png` 来自真实 Windows 11 ARM64 Release App 的 WebView2 CDP；两张 Terminal PNG 分别只对 UIA 已验证属于本次运行的 Claude/Codex Terminal HWND 调用 `PrintWindow`，不是全屏截图。
 - Chrome mock 与 Windows 隔离夹具图片中的会话、消息、路径和 Session ID 都是模拟数据；实机截图只显示本机会话标题。
 - 实机截图不在自动脚本中生成；界面或版本变化后应重新截取、逐张审阅，再替换本目录文件。

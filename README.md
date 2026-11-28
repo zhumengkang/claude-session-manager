@@ -14,6 +14,7 @@
   <img alt="平台：macOS Apple Silicon / Windows 11 ARM64" src="https://img.shields.io/badge/平台-macOS%20Apple%20Silicon%20%7C%20Windows%2011%20ARM64-2f6fed">
   <img alt="技术栈：Rust + Tauri 2" src="https://img.shields.io/badge/技术栈-Rust%20%2B%20Tauri%202-24C8DB">
   <img alt="源码版本：0.1.1" src="https://img.shields.io/badge/源码版本-0.1.1-informational">
+  <img alt="安装版：0.1.1" src="https://img.shields.io/badge/安装版-0.1.1-2ea043">
 </p>
 
 <p align="center">
@@ -34,9 +35,9 @@
 
 ## 界面预览
 
-| macOS 实机：更新面板 | macOS 实机：发现新版本 |
+| macOS 实机：更新面板 | macOS 实机：0.1.0 发现新版本 |
 | --- | --- |
-| ![macOS 安装版的应用更新面板，内置 GitHub 仓库与版本检查](docs/images/csm-macos-live-update.png) | ![macOS 安装版显示发现新版本 0.1.1 的升级横幅](docs/images/csm-macos-live-banner.png) |
+| ![macOS 安装版的应用更新面板，内置 GitHub 仓库与版本检查](docs/images/csm-macos-live-update.png) | ![macOS 0.1.0 安装版显示发现新版本 0.1.1 的升级横幅](docs/images/csm-macos-live-banner.png) |
 
 | Windows 11 ARM64 实机界面 | Windows 实机：更新面板 |
 | --- | --- |
@@ -59,7 +60,7 @@
 | 更新已安装的旧版本 | [docs/DEPLOYMENT.md · 已有安装如何更新到新版本](docs/DEPLOYMENT.md#已有安装如何更新到新版本) |
 | 从源码编译（环境已就绪） | [docs/BUILD.md](docs/BUILD.md) |
 
-> **安装包由作者在 [GitHub Releases](https://github.com/zhumengkang/claude-session-manager/releases) 页单独上传，本仓库只托管源码。** 发布页暂时没有 DMG / NSIS 时，说明该版本尚未上传二进制，可等待上传或按 [源码编译](docs/BUILD.md) 自行构建。当前已验收的安装版本为 `0.1.0`（macOS Apple Silicon、Windows 11 ARM64），源码 main 为 `0.1.1`。
+> **安装包由作者在 [GitHub Releases](https://github.com/zhumengkang/claude-session-manager/releases) 页单独上传，本仓库只托管源码。** 当前 `v0.1.1` 已提供 macOS Apple Silicon DMG、Windows 11 ARM64 NSIS 和独立 EXE；源码 main 与安装版均为 `0.1.1`。发布页暂时没有附件时，可等待上传或按 [源码编译](docs/BUILD.md) 自行构建。
 
 **GitHub 仓库边界：** 本目录是源码专用 Git 根目录，只允许提交源码、锁文件、测试、文档及必要源码资源；DMG、App、EXE、MSI、压缩包、构建产物和真实会话数据不得进入 Git。二进制附件只由项目所有者在 GitHub Release 单独上传，规则见 [GitHub 源码专用仓库与附件隔离](docs/GITHUB_SOURCE_ONLY.md)。
 
@@ -90,14 +91,17 @@
 
 ### 选择安装包
 
-| 平台 | 安装文件 | 当前验收范围 |
+| 平台 | 安装文件 | 当前核对范围 |
 | --- | --- | --- |
-| macOS Apple Silicon | `Claude Session Manager_0.1.0_aarch64.dmg` | `/Applications` 严格签名、DMG 和安装版合成恢复已有验收记录 |
-| Windows 11 ARM64 | `Claude Session Manager_0.1.0_arm64-setup.exe` | 当前用户 NSIS 更新、卸载、干净重装和安装路径 GUI 已有验收记录 |
+| macOS Apple Silicon | `Claude.Session.Manager_0.1.1_aarch64.dmg` | `v0.1.1` Release 提供；版本、arm64 架构与 ad hoc 签名结构已核对 |
+| Windows 11 ARM64 | `Claude.Session.Manager_0.1.1_arm64-setup.exe` | `v0.1.1` Release 提供；安装器与内置应用的 0.1.1 / ARM64 已核对 |
+| Windows 11 ARM64（免安装） | `csm-app.exe` | `v0.1.1` Release 提供；独立 0.1.1 / ARM64 可执行文件 |
+
+直接下载：**[macOS Apple Silicon DMG](https://github.com/zhumengkang/claude-session-manager/releases/download/v0.1.1/Claude.Session.Manager_0.1.1_aarch64.dmg)** · **[Windows 11 ARM64 NSIS](https://github.com/zhumengkang/claude-session-manager/releases/download/v0.1.1/Claude.Session.Manager_0.1.1_arm64-setup.exe)** · **[Windows 11 ARM64 独立 EXE](https://github.com/zhumengkang/claude-session-manager/releases/download/v0.1.1/csm-app.exe)**
 
 安装前确认文件来自项目所有者的 Release 或明确交付目录，并核对平台、架构、版本和文件名。不要运行来源不明的转载包、证书修复包或历史备份。
 
-> GitHub Release 当前只包含自动生成的源码归档；DMG / NSIS 安装包由项目所有者单独上传。发布页暂时没有附件时，请等待上传或按 [源码编译](docs/BUILD.md) 自行构建，不要使用来源不明的转载包。
+> GitHub Release 同时提供自动生成的源码归档和项目所有者单独上传的 DMG / NSIS；Git 仓库本身仍然只包含源码。不要使用来源不明的转载包。
 
 ### macOS 安装与首次授权
 
@@ -183,7 +187,7 @@ codex --dangerously-bypass-approvals-and-sandbox resume <session-id>
 
 启动时自动检查和运行期间每 6 小时检查均可配置。使用 fork 时可在面板改成自己的 `owner/repository`。详见 **[docs/UPDATES.md](docs/UPDATES.md)**。
 
-> 当前公开仓库已发布非草稿、非预发布的 `v0.1.1`（源码版，无安装附件）和 `v0.1.0`（安装验收记录版本）。安装版 0.1.0 用内置仓库完成真实只读检查时 latest 为 `v0.1.0`，面板显示同版本；现在 latest 为 `v0.1.1`，0.1.0 安装版检查时会显示升级横幅，可用于验证更高版本提醒。应用不会自动下载、替换或安装。
+> 当前公开仓库的 latest stable 为 `v0.1.1`，提供 macOS Apple Silicon DMG、Windows 11 ARM64 NSIS 和独立 EXE，源码与安装版均为 0.1.1。安装版 0.1.0 在 latest 为 `v0.1.0` 时完成过真实只读同版本检查；现在 0.1.0 检查会显示 0.1.1 升级横幅，可用于验证更高版本提醒。应用不会自动下载、替换或安装。
 
 ### 平台部署与数据
 
@@ -319,7 +323,7 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 - macOS 恢复 IPC 仍为同步主线程路径。
 - Windows x64、MSI、Explorer、自启动真实切换、原生标签聚焦和真实 `.ps1` Provider 完整恢复未覆盖。
 - Windows 已运行会话会阻止重复，但不能聚焦原标签。
-- GitHub 更新：已用真实公开仓库完成同版本只读检查；macOS 0.1.0 安装版已验证 `v0.1.1` 的升级横幅；Windows 横幅尚未验证（VM 网络受限时应用会显示检查失败）。
+- GitHub 更新：已用真实公开仓库完成同版本只读检查；macOS 0.1.0 安装版已验证 `v0.1.1` 的升级横幅；Windows 横幅尚未验证（VM 网络受限时应用会显示检查失败）。`v0.1.1` Release 的三份安装附件已核对版本、架构、签名结构与下载可访问性。
 - 当前没有 Developer ID / Apple 公证或 Authenticode 发布流程。
 - 首轮 `source-only` 与 `windows-source-check` 已实际运行并通过；后续状态以 GitHub Actions 为准，CI 不代替真实 GUI/Terminal 验收。
 - 不能据现有测试声称“已经没有 bug”。
